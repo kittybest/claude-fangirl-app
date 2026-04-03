@@ -7,6 +7,7 @@ export const SHOW_CATEGORIES: { value: ShowCategory; label: string }[] = [
   { value: 'movie', label: '電影' },
   { value: 'online', label: '線上演出' },
   { value: 'festival', label: '音樂節' },
+  { value: 'fansign', label: '簽售' },
   { value: 'other', label: '其他' },
 ];
 

@@ -1,5 +1,5 @@
 export type ShowStatus = 'interested' | 'ticketed' | 'cancelled';
-export type ShowCategory = 'concert' | 'musical' | 'play' | 'movie' | 'online' | 'festival' | 'other';
+export type ShowCategory = 'concert' | 'musical' | 'play' | 'movie' | 'online' | 'festival' | 'fansign' | 'other';
 export type ScheduleType = 'member' | 'presale' | 'general' | 'lottery' | 'other';
 export type ExpenseCategory = '門票' | '周邊' | '專輯' | '會員' | '生咖' | '展覽' | '電影/線上演出' | '預錄' | '泡泡' | '其他';
 export type Currency = 'TWD' | 'JPY' | 'KRW' | 'CNY' | 'USD';
