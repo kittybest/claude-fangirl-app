@@ -29,7 +29,14 @@ export default function ScheduleForm({ initial, isEdit, shows, onSave, onClose }
   const [type, setType] = useState<ScheduleType>(initial?.type ?? 'general');
   const [ticketUrl, setTicketUrl] = useState(initial?.ticketUrl ?? '');
   const [relatedShowId, setRelatedShowId] = useState(initial?.relatedShowId ?? '');
+  const [showSearch, setShowSearch] = useState('');
+  const [showSearchOpen, setShowSearchOpen] = useState(false);
   const [notes, setNotes] = useState(initial?.notes ?? '');
+
+  const selectedShow = relatedShowId ? shows.find(s => s.id === relatedShowId) : null;
+  const filteredShows = showSearch.trim()
+    ? shows.filter(s => s.title.toLowerCase().includes(showSearch.toLowerCase())).slice(0, 8)
+    : [];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,11 +91,35 @@ export default function ScheduleForm({ initial, isEdit, shows, onSave, onClose }
           </div>
           <input value={ticketUrl} onChange={e => setTicketUrl(e.target.value)} placeholder="購票連結"
             className="w-full border rounded-lg px-3 py-2 text-sm" />
-          <select value={relatedShowId} onChange={e => setRelatedShowId(e.target.value)}
-            className="w-full border rounded-lg px-3 py-2 text-sm bg-white">
-            <option value="">關聯演出 (選填)</option>
-            {shows.map(s => <option key={s.id} value={s.id}>{s.title} ({s.date})</option>)}
-          </select>
+          <div className="relative">
+            {selectedShow ? (
+              <div className="flex items-center gap-2 border rounded-lg px-3 py-2 text-sm bg-gray-50">
+                <span className="flex-1 text-gray-700 truncate">{selectedShow.title} ({selectedShow.date})</span>
+                <button type="button" onClick={() => { setRelatedShowId(''); setShowSearch(''); }}
+                  className="text-gray-400 text-xs">✕</button>
+              </div>
+            ) : (
+              <input
+                value={showSearch}
+                onChange={e => { setShowSearch(e.target.value); setShowSearchOpen(true); }}
+                onFocus={() => setShowSearchOpen(true)}
+                placeholder="搜尋關聯演出 (選填)"
+                className="w-full border rounded-lg px-3 py-2 text-sm"
+              />
+            )}
+            {showSearchOpen && filteredShows.length > 0 && (
+              <ul className="absolute z-10 w-full bg-white border rounded-lg mt-1 shadow-lg max-h-40 overflow-y-auto">
+                {filteredShows.map(s => (
+                  <li key={s.id}
+                    onClick={() => { setRelatedShowId(s.id); setShowSearch(''); setShowSearchOpen(false); }}
+                    className="px-3 py-2 text-xs hover:bg-purple-50 cursor-pointer border-b border-gray-50 last:border-0 truncate"
+                  >
+                    {s.title} <span className="text-gray-400">({s.date})</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
           <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="備註"
             className="w-full border rounded-lg px-3 py-2 text-sm" rows={2} />
           <button type="submit" className="w-full bg-blue-500 text-white rounded-full py-2.5 text-sm font-medium">
