@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Show, Series } from '../../types';
-import { STATUS_CONFIG, SHOW_CATEGORIES } from '../../utils/constants';
+import { STATUS_CONFIG } from '../../utils/constants';
 
 type SubTab = 'series' | 'artists';
 
