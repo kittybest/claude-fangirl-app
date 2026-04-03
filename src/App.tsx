@@ -45,7 +45,7 @@ export default function App() {
           onDeleteSchedule={id => { if (confirm('刪除此時程？')) removeSchedule(id); }}
         />
       )}
-      {tab === 'expenses' && (
+      {tab === 'expenses' && isAuthorized && (
         <ExpenseList
           expenses={data.expenses}
           shows={data.shows}
@@ -55,8 +55,13 @@ export default function App() {
           onDelete={id => { if (confirm('刪除此花費？')) removeExpense(id); }}
         />
       )}
-      {tab === 'stats' && (
+      {tab === 'stats' && isAuthorized && (
         <StatsView shows={data.shows} expenses={data.expenses} />
+      )}
+      {(tab === 'expenses' || tab === 'stats') && !isAuthorized && (
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-gray-400 text-sm">請先登入查看</p>
+        </div>
       )}
 
       <BottomNav
