@@ -14,6 +14,7 @@ export interface Show {
   title: string;
   date: string; // YYYY-MM-DD
   time?: string;
+  timezone?: string;
   artists: string[];
   venue?: string;
   venueUrl?: string;

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Show, ShowLink, ShowStatus, ShowCategory, Currency } from '../../types';
-import { SHOW_CATEGORIES, STATUS_CONFIG } from '../../utils/constants';
+import { SHOW_CATEGORIES, STATUS_CONFIG, TIMEZONES } from '../../utils/constants';
 import { CURRENCIES, convertToTWD } from '../../utils/currency';
 
 interface Props {
@@ -13,6 +13,7 @@ export default function ShowForm({ initial, onSave, onClose }: Props) {
   const [title, setTitle] = useState(initial?.title ?? '');
   const [date, setDate] = useState(initial?.date ?? new Date().toISOString().slice(0, 10));
   const [time, setTime] = useState(initial?.time ?? '');
+  const [timezone, setTimezone] = useState(initial?.timezone ?? 'Asia/Taipei');
   const [artists, setArtists] = useState(initial?.artists.join(', ') ?? '');
   const [venue, setVenue] = useState(initial?.venue ?? '');
   const [venueUrl, setVenueUrl] = useState(initial?.venueUrl ?? '');
@@ -47,6 +48,7 @@ export default function ShowForm({ initial, onSave, onClose }: Props) {
     onSave({
       title, date,
       time: time || undefined,
+      timezone: time ? timezone : undefined,
       artists: artists ? artists.split(',').map(a => a.trim()).filter(Boolean) : [],
       venue: venue || undefined,
       venueUrl: venueUrl || undefined,
@@ -74,11 +76,15 @@ export default function ShowForm({ initial, onSave, onClose }: Props) {
         <form onSubmit={handleSubmit} className="space-y-2.5">
           <input value={title} onChange={e => setTitle(e.target.value)} placeholder="演出名稱 *" required
             className="w-full border rounded-lg px-3 py-2 text-sm" />
+          <input type="date" value={date} onChange={e => setDate(e.target.value)} required
+            className="w-full border rounded-lg px-3 py-2 text-sm" />
           <div className="flex gap-2">
-            <input type="date" value={date} onChange={e => setDate(e.target.value)} required
-              className="flex-1 border rounded-lg px-3 py-2 text-sm" />
             <input type="time" value={time} onChange={e => setTime(e.target.value)} placeholder="時間"
-              className="w-28 border rounded-lg px-3 py-2 text-sm" />
+              className="flex-1 border rounded-lg px-3 py-2 text-sm" />
+            <select value={timezone} onChange={e => setTimezone(e.target.value)}
+              className="flex-1 border rounded-lg px-2 py-2 text-sm bg-white">
+              {TIMEZONES.map(tz => <option key={tz.value} value={tz.value}>{tz.label}</option>)}
+            </select>
           </div>
           <input value={artists} onChange={e => setArtists(e.target.value)} placeholder="演出者 (逗號分隔)"
             className="w-full border rounded-lg px-3 py-2 text-sm" />
