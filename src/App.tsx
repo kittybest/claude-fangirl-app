@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Show, Schedule } from './types';
 import { useAppData } from './hooks/useAppData';
+import { useAuth } from './hooks/useAuth';
 import BottomNav from './components/layout/BottomNav';
+import LoginModal from './components/layout/LoginModal';
 import CalendarView from './components/calendar/CalendarView';
 import ExpenseList from './components/expenses/ExpenseList';
 import StatsView from './components/stats/StatsView';
@@ -17,6 +19,7 @@ export default function App() {
     addSchedule, updateSchedule, removeSchedule,
     addExpense, updateExpense, removeExpense,
   } = useAppData();
+  const { isAuthorized, login, logout } = useAuth();
 
   const [tab, setTab] = useState<Tab>('calendar');
   const [showForm, setShowForm] = useState(false);
@@ -24,6 +27,7 @@ export default function App() {
   const [scheduleForm, setScheduleForm] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
   const [duplicatingSchedule, setDuplicatingSchedule] = useState<Schedule | null>(null);
+  const [loginModal, setLoginModal] = useState(false);
 
   return (
     <div className="max-w-lg mx-auto bg-gray-50 min-h-screen flex flex-col pb-14">
@@ -31,6 +35,7 @@ export default function App() {
         <CalendarView
           shows={data.shows}
           schedules={data.schedules}
+          isAuthorized={isAuthorized}
           onAddShow={() => setShowForm(true)}
           onAddSchedule={() => setScheduleForm(true)}
           onEditShow={s => setEditingShow(s)}
@@ -44,6 +49,7 @@ export default function App() {
         <ExpenseList
           expenses={data.expenses}
           shows={data.shows}
+          isAuthorized={isAuthorized}
           onAdd={addExpense}
           onUpdate={updateExpense}
           onDelete={id => { if (confirm('刪除此花費？')) removeExpense(id); }}
@@ -53,7 +59,19 @@ export default function App() {
         <StatsView shows={data.shows} expenses={data.expenses} />
       )}
 
-      <BottomNav active={tab} onChange={setTab} />
+      <BottomNav
+        active={tab}
+        onChange={setTab}
+        isAuthorized={isAuthorized}
+        onAuthClick={() => isAuthorized ? logout() : setLoginModal(true)}
+      />
+
+      {loginModal && (
+        <LoginModal
+          onLogin={login}
+          onClose={() => setLoginModal(false)}
+        />
+      )}
 
       {/* Show Form */}
       {(showForm || editingShow) && (
@@ -77,7 +95,7 @@ export default function App() {
           shows={data.shows}
           onSave={schedule => {
             if (editingSchedule) updateSchedule(editingSchedule.id, schedule);
-            else addSchedule(schedule); // both new and duplicate create a new entry
+            else addSchedule(schedule);
             setScheduleForm(false);
             setEditingSchedule(null);
             setDuplicatingSchedule(null);

@@ -7,6 +7,7 @@ import DayDetail from './DayDetail';
 interface Props {
   shows: Show[];
   schedules: Schedule[];
+  isAuthorized: boolean;
   onAddShow: () => void;
   onAddSchedule: () => void;
   onEditShow: (show: Show) => void;
@@ -16,7 +17,7 @@ interface Props {
   onDeleteSchedule: (id: string) => void;
 }
 
-export default function CalendarView({ shows, schedules, onAddShow, onAddSchedule, onEditShow, onEditSchedule, onDuplicateSchedule, onDeleteShow, onDeleteSchedule }: Props) {
+export default function CalendarView({ shows, schedules, isAuthorized, onAddShow, onAddSchedule, onEditShow, onEditSchedule, onDuplicateSchedule, onDeleteShow, onDeleteSchedule }: Props) {
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
@@ -109,6 +110,7 @@ export default function CalendarView({ shows, schedules, onAddShow, onAddSchedul
             shows={showsForDate(selectedDate)}
             schedules={schedulesForDate(selectedDate)}
             allShows={shows}
+            isAuthorized={isAuthorized}
             onAddShow={onAddShow}
             onAddSchedule={onAddSchedule}
             onEditShow={onEditShow}
@@ -125,14 +127,16 @@ export default function CalendarView({ shows, schedules, onAddShow, onAddSchedul
       </div>
 
       {/* FAB */}
-      <div className="fixed bottom-16 right-4 flex flex-col gap-2 z-40">
-        <button onClick={onAddSchedule} className="w-11 h-11 rounded-full bg-blue-500 text-white shadow-lg text-lg flex items-center justify-center">
-          ⏰
-        </button>
-        <button onClick={onAddShow} className="w-11 h-11 rounded-full bg-purple-500 text-white shadow-lg text-lg flex items-center justify-center">
-          +
-        </button>
-      </div>
+      {isAuthorized && (
+        <div className="fixed bottom-16 right-4 flex flex-col gap-2 z-40">
+          <button onClick={onAddSchedule} className="w-11 h-11 rounded-full bg-blue-500 text-white shadow-lg text-lg flex items-center justify-center">
+            ⏰
+          </button>
+          <button onClick={onAddShow} className="w-11 h-11 rounded-full bg-purple-500 text-white shadow-lg text-lg flex items-center justify-center">
+            +
+          </button>
+        </div>
+      )}
     </div>
   );
 }

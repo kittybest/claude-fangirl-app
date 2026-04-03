@@ -5,6 +5,7 @@ import ExpenseForm from './ExpenseForm';
 interface Props {
   expenses: Expense[];
   shows: Show[];
+  isAuthorized: boolean;
   onAdd: (expense: Omit<Expense, 'id'>) => void;
   onUpdate: (id: string, updates: Partial<Omit<Expense, 'id'>>) => void;
   onDelete: (id: string) => void;
@@ -22,7 +23,7 @@ interface DisplayExpense {
   isFromShow: boolean;
 }
 
-export default function ExpenseList({ expenses, shows, onAdd, onUpdate, onDelete }: Props) {
+export default function ExpenseList({ expenses, shows, isAuthorized, onAdd, onUpdate, onDelete }: Props) {
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filterMonth, setFilterMonth] = useState(() => {
@@ -115,7 +116,7 @@ export default function ExpenseList({ expenses, shows, onAdd, onUpdate, onDelete
                     <p className="text-[10px] text-gray-400">≈NT${e.amountTWD.toLocaleString()}</p>
                   )}
                 </div>
-                {!e.isFromShow && (
+                {isAuthorized && !e.isFromShow && (
                   <div className="flex gap-1 flex-shrink-0">
                     <button onClick={() => setEditingId(e.id)} className="text-[10px] text-purple-500 border border-purple-300 rounded-full px-2 py-1">編輯</button>
                     <button onClick={() => onDelete(e.id)} className="text-[10px] text-red-400 border border-red-300 rounded-full px-2 py-1">刪除</button>
@@ -128,12 +129,14 @@ export default function ExpenseList({ expenses, shows, onAdd, onUpdate, onDelete
       </div>
 
       {/* FAB */}
-      <button
-        onClick={() => setAdding(true)}
-        className="fixed bottom-16 right-4 w-11 h-11 rounded-full bg-purple-500 text-white shadow-lg text-xl flex items-center justify-center z-40"
-      >
-        +
-      </button>
+      {isAuthorized && (
+        <button
+          onClick={() => setAdding(true)}
+          className="fixed bottom-16 right-4 w-11 h-11 rounded-full bg-purple-500 text-white shadow-lg text-xl flex items-center justify-center z-40"
+        >
+          +
+        </button>
+      )}
 
       {adding && (
         <ExpenseForm
