@@ -1,4 +1,4 @@
-type Tab = 'calendar' | 'expenses' | 'stats';
+type Tab = 'calendar' | 'lists' | 'expenses' | 'stats';
 
 interface Props {
   active: Tab;
@@ -7,10 +7,11 @@ interface Props {
   onAuthClick: () => void;
 }
 
-const tabs: { key: Tab; label: string; icon: string }[] = [
+const tabs: { key: Tab; label: string; icon: string; authOnly?: boolean }[] = [
   { key: 'calendar', label: '月曆', icon: '📅' },
-  { key: 'expenses', label: '記帳', icon: '💰' },
-  { key: 'stats', label: '統計', icon: '📊' },
+  { key: 'lists', label: '列表', icon: '📋' },
+  { key: 'expenses', label: '記帳', icon: '💰', authOnly: true },
+  { key: 'stats', label: '統計', icon: '📊', authOnly: true },
 ];
 
 export default function BottomNav({ active, onChange, isAuthorized, onAuthClick }: Props) {

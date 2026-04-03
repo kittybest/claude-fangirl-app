@@ -1,10 +1,10 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { AppData, Show, Schedule, Expense } from '../types';
+import { AppData, Show, Schedule, Expense, Series } from '../types';
 import { generateId } from '../utils/id';
 
 const STORAGE_KEY = 'fangirl-app-data';
 
-const empty: AppData = { shows: [], schedules: [], expenses: [] };
+const empty: AppData = { shows: [], schedules: [], expenses: [], series: [] };
 
 function getLocal(): AppData {
   try {
@@ -107,10 +107,48 @@ export function useAppData() {
     setData(d => ({ ...d, expenses: d.expenses.filter(e => e.id !== id) }));
   }, [setData]);
 
+  // Series — batch create shows
+  const addSeries = useCallback((title: string, artists: string[], items: { date: string; venue: string }[]) => {
+    const seriesId = generateId();
+    const newShows: Show[] = items.map(item => ({
+      id: generateId(),
+      title,
+      date: item.date,
+      venue: item.venue || undefined,
+      artists,
+      links: [],
+      status: 'interested' as const,
+    }));
+    const series: Series = {
+      id: seriesId,
+      title,
+      showIds: newShows.map(s => s.id),
+    };
+    setData(d => ({
+      ...d,
+      shows: [...d.shows, ...newShows],
+      series: [...(d.series || []), series],
+    }));
+  }, [setData]);
+
+  const removeSeries = useCallback((id: string) => {
+    setData(d => {
+      const series = (d.series || []).find(s => s.id === id);
+      if (!series) return d;
+      return {
+        ...d,
+        shows: d.shows.filter(s => !series.showIds.includes(s.id)),
+        schedules: d.schedules.filter(s => !s.relatedShowId || !series.showIds.includes(s.relatedShowId)),
+        series: (d.series || []).filter(s => s.id !== id),
+      };
+    });
+  }, [setData]);
+
   return {
     data, loaded,
     addShow, updateShow, removeShow,
     addSchedule, updateSchedule, removeSchedule,
     addExpense, updateExpense, removeExpense,
+    addSeries, removeSeries,
   };
 }

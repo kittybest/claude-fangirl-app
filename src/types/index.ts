@@ -54,8 +54,15 @@ export interface Expense {
   notes?: string;
 }
 
+export interface Series {
+  id: string;
+  title: string;
+  showIds: string[];
+}
+
 export interface AppData {
   shows: Show[];
   schedules: Schedule[];
   expenses: Expense[];
+  series: Series[];
 }

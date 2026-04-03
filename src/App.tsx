@@ -5,12 +5,14 @@ import { useAuth } from './hooks/useAuth';
 import BottomNav from './components/layout/BottomNav';
 import LoginModal from './components/layout/LoginModal';
 import CalendarView from './components/calendar/CalendarView';
+import ListView from './components/series/ListView';
 import ExpenseList from './components/expenses/ExpenseList';
 import StatsView from './components/stats/StatsView';
 import ShowForm from './components/shows/ShowForm';
 import ScheduleForm from './components/schedules/ScheduleForm';
+import SeriesForm from './components/series/SeriesForm';
 
-type Tab = 'calendar' | 'expenses' | 'stats';
+type Tab = 'calendar' | 'lists' | 'expenses' | 'stats';
 
 export default function App() {
   const {
@@ -18,6 +20,7 @@ export default function App() {
     addShow, updateShow, removeShow,
     addSchedule, updateSchedule, removeSchedule,
     addExpense, updateExpense, removeExpense,
+    addSeries, removeSeries,
   } = useAppData();
   const { isAuthorized, login, logout } = useAuth();
 
@@ -28,6 +31,7 @@ export default function App() {
   const [scheduleForm, setScheduleForm] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
   const [duplicatingSchedule, setDuplicatingSchedule] = useState<Schedule | null>(null);
+  const [seriesForm, setSeriesForm] = useState(false);
   const [loginModal, setLoginModal] = useState(false);
 
   return (
@@ -47,6 +51,15 @@ export default function App() {
           onDeleteSchedule={id => { if (confirm('刪除此時程？')) removeSchedule(id); }}
         />
       )}
+      {tab === 'lists' && (
+        <ListView
+          shows={data.shows}
+          series={data.series || []}
+          isAuthorized={isAuthorized}
+          onAddSeries={() => setSeriesForm(true)}
+          onDeleteSeries={removeSeries}
+        />
+      )}
       {tab === 'expenses' && isAuthorized && (
         <ExpenseList
           expenses={data.expenses}
@@ -60,6 +73,13 @@ export default function App() {
       {tab === 'stats' && isAuthorized && (
         <StatsView shows={data.shows} expenses={data.expenses} />
       )}
+      {seriesForm && (
+        <SeriesForm
+          onSave={(title, artists, items) => { addSeries(title, artists, items); setSeriesForm(false); }}
+          onClose={() => setSeriesForm(false)}
+        />
+      )}
+
       {(tab === 'expenses' || tab === 'stats') && !isAuthorized && (
         <div className="flex-1 flex items-center justify-center">
           <p className="text-gray-400 text-sm">請先登入查看</p>
