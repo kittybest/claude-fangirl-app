@@ -43,6 +43,7 @@ export default function App() {
           isAuthorized={isAuthorized}
           onAddShow={() => setShowForm(true)}
           onAddSchedule={() => setScheduleForm(true)}
+          onAddSeries={() => setSeriesForm(true)}
           onEditShow={s => setEditingShow(s)}
           onDuplicateShow={s => setDuplicatingShow(s)}
           onEditSchedule={s => setEditingSchedule(s)}
@@ -56,7 +57,6 @@ export default function App() {
           shows={data.shows}
           series={data.series || []}
           isAuthorized={isAuthorized}
-          onAddSeries={() => setSeriesForm(true)}
           onDeleteSeries={removeSeries}
         />
       )}

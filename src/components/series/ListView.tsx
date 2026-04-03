@@ -8,11 +8,10 @@ interface Props {
   shows: Show[];
   series: Series[];
   isAuthorized: boolean;
-  onAddSeries: () => void;
   onDeleteSeries: (id: string) => void;
 }
 
-export default function ListView({ shows, series, isAuthorized, onAddSeries, onDeleteSeries }: Props) {
+export default function ListView({ shows, series, isAuthorized, onDeleteSeries }: Props) {
   const [subTab, setSubTab] = useState<SubTab>('series');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -115,13 +114,6 @@ export default function ListView({ shows, series, isAuthorized, onAddSeries, onD
         )}
       </div>
 
-      {/* FAB */}
-      {isAuthorized && subTab === 'series' && (
-        <button onClick={onAddSeries}
-          className="fixed bottom-16 right-4 w-11 h-11 rounded-full bg-purple-500 text-white shadow-lg text-xl flex items-center justify-center z-40">
-          +
-        </button>
-      )}
     </div>
   );
 }

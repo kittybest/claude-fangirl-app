@@ -10,6 +10,7 @@ interface Props {
   isAuthorized: boolean;
   onAddShow: () => void;
   onAddSchedule: () => void;
+  onAddSeries: () => void;
   onEditShow: (show: Show) => void;
   onDuplicateShow: (show: Show) => void;
   onEditSchedule: (schedule: Schedule) => void;
@@ -18,11 +19,12 @@ interface Props {
   onDeleteSchedule: (id: string) => void;
 }
 
-export default function CalendarView({ shows, schedules, isAuthorized, onAddShow, onAddSchedule, onEditShow, onDuplicateShow, onEditSchedule, onDuplicateSchedule, onDeleteShow, onDeleteSchedule }: Props) {
+export default function CalendarView({ shows, schedules, isAuthorized, onAddShow, onAddSchedule, onAddSeries, onEditShow, onDuplicateShow, onEditSchedule, onDuplicateSchedule, onDeleteShow, onDeleteSchedule }: Props) {
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [fabOpen, setFabOpen] = useState(false);
 
   const navigateToDate = (dateStr: string) => {
     const { year: y, month: m } = parseDate(dateStr);
@@ -138,14 +140,38 @@ export default function CalendarView({ shows, schedules, isAuthorized, onAddShow
 
       {/* FAB */}
       {isAuthorized && (
-        <div className="fixed bottom-16 right-4 flex flex-col gap-2 z-40">
-          <button onClick={onAddSchedule} className="w-11 h-11 rounded-full bg-blue-500 text-white shadow-lg text-lg flex items-center justify-center">
-            ⏰
-          </button>
-          <button onClick={onAddShow} className="w-11 h-11 rounded-full bg-purple-500 text-white shadow-lg text-lg flex items-center justify-center">
-            +
-          </button>
-        </div>
+        <>
+          {fabOpen && (
+            <div className="fixed inset-0 z-40" onClick={() => setFabOpen(false)} />
+          )}
+          <div className="fixed bottom-16 right-4 flex flex-col items-end gap-2 z-40">
+            {fabOpen && (
+              <>
+                <button onClick={() => { onAddSeries(); setFabOpen(false); }}
+                  className="flex items-center gap-2 bg-white shadow-lg rounded-full pl-3 pr-4 py-2 text-sm text-gray-700 border">
+                  <span className="w-7 h-7 rounded-full bg-green-500 text-white flex items-center justify-center text-xs">📋</span>
+                  新增系列
+                </button>
+                <button onClick={() => { onAddSchedule(); setFabOpen(false); }}
+                  className="flex items-center gap-2 bg-white shadow-lg rounded-full pl-3 pr-4 py-2 text-sm text-gray-700 border">
+                  <span className="w-7 h-7 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs">⏰</span>
+                  新增時程
+                </button>
+                <button onClick={() => { onAddShow(); setFabOpen(false); }}
+                  className="flex items-center gap-2 bg-white shadow-lg rounded-full pl-3 pr-4 py-2 text-sm text-gray-700 border">
+                  <span className="w-7 h-7 rounded-full bg-purple-500 text-white flex items-center justify-center text-xs">🎵</span>
+                  新增演出
+                </button>
+              </>
+            )}
+            <button onClick={() => setFabOpen(!fabOpen)}
+              className={`w-12 h-12 rounded-full shadow-lg text-white text-xl flex items-center justify-center transition-transform ${
+                fabOpen ? 'bg-gray-500 rotate-45' : 'bg-purple-500'
+              }`}>
+              +
+            </button>
+          </div>
+        </>
       )}
     </div>
   );
