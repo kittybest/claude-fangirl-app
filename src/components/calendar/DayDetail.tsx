@@ -8,6 +8,7 @@ interface Props {
   schedules: Schedule[];
   allShows: Show[];
   isAuthorized: boolean;
+  onNavigateToDate: (date: string) => void;
   onAddShow: () => void;
   onAddSchedule: () => void;
   onEditShow: (show: Show) => void;
@@ -17,7 +18,7 @@ interface Props {
   onDeleteSchedule: (id: string) => void;
 }
 
-export default function DayDetail({ date, shows, schedules, allShows, isAuthorized, onEditShow, onEditSchedule, onDuplicateSchedule, onDeleteShow, onDeleteSchedule }: Props) {
+export default function DayDetail({ date, shows, schedules, allShows, isAuthorized, onNavigateToDate, onEditShow, onEditSchedule, onDuplicateSchedule, onDeleteShow, onDeleteSchedule }: Props) {
   const d = new Date(date + 'T00:00:00');
   const label = `${d.getMonth() + 1}/${d.getDate()} (${weekdayZh(d)})`;
 
@@ -31,9 +32,9 @@ export default function DayDetail({ date, shows, schedules, allShows, isAuthoriz
     } catch { return ''; }
   };
 
-  const getRelatedShowTitle = (showId?: string) => {
+  const getRelatedShow = (showId?: string) => {
     if (!showId) return null;
-    return allShows.find(s => s.id === showId)?.title;
+    return allShows.find(s => s.id === showId) ?? null;
   };
 
   return (
@@ -89,7 +90,7 @@ export default function DayDetail({ date, shows, schedules, allShows, isAuthoriz
 
       {/* Schedules */}
       {schedules.map(s => {
-        const relatedTitle = getRelatedShowTitle(s.relatedShowId);
+        const relatedShow = getRelatedShow(s.relatedShowId);
         return (
           <div key={s.id} className="bg-white rounded-lg p-3 mb-2 shadow-sm border-l-2 border-blue-400">
             <div className="flex items-center gap-2">
@@ -99,7 +100,14 @@ export default function DayDetail({ date, shows, schedules, allShows, isAuthoriz
             </div>
             <div className="flex items-center gap-2 mt-1 text-[10px] text-gray-400">
               <span>{SCHEDULE_TYPES.find(t => t.value === s.type)?.label}</span>
-              {relatedTitle && <span>- {relatedTitle}</span>}
+              {relatedShow && (
+                <button
+                  onClick={() => onNavigateToDate(relatedShow.date)}
+                  className="text-purple-500 underline"
+                >
+                  {relatedShow.title} ({relatedShow.date})
+                </button>
+              )}
             </div>
             {s.ticketUrl && (
               <a href={s.ticketUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-500 underline mt-1 block">

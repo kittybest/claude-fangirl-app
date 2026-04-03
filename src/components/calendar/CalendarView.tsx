@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Show, Schedule } from '../../types';
-import { getDaysInMonth, getFirstDayOfWeek, formatDate } from '../../utils/date';
+import { getDaysInMonth, getFirstDayOfWeek, formatDate, parseDate } from '../../utils/date';
 import { STATUS_CONFIG } from '../../utils/constants';
 import DayDetail from './DayDetail';
 
@@ -22,6 +22,13 @@ export default function CalendarView({ shows, schedules, isAuthorized, onAddShow
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  const navigateToDate = (dateStr: string) => {
+    const { year: y, month: m } = parseDate(dateStr);
+    setYear(y);
+    setMonth(m);
+    setSelectedDate(dateStr);
+  };
 
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfWeek(year, month);
@@ -111,6 +118,7 @@ export default function CalendarView({ shows, schedules, isAuthorized, onAddShow
             schedules={schedulesForDate(selectedDate)}
             allShows={shows}
             isAuthorized={isAuthorized}
+            onNavigateToDate={navigateToDate}
             onAddShow={onAddShow}
             onAddSchedule={onAddSchedule}
             onEditShow={onEditShow}
