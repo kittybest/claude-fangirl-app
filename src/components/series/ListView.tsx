@@ -8,12 +8,14 @@ interface Props {
   shows: Show[];
   series: Series[];
   isAuthorized: boolean;
+  onEditSeries: (series: Series) => void;
   onDeleteSeries: (id: string) => void;
+  expandSeriesId?: string | null;
 }
 
-export default function ListView({ shows, series, isAuthorized, onDeleteSeries }: Props) {
+export default function ListView({ shows, series, isAuthorized, onEditSeries, onDeleteSeries, expandSeriesId }: Props) {
   const [subTab, setSubTab] = useState<SubTab>('series');
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(expandSeriesId ?? null);
 
   const toggle = (id: string) => setExpandedId(expandedId === id ? null : id);
 
@@ -72,10 +74,16 @@ export default function ListView({ shows, series, isAuthorized, onDeleteSeries }
                           <ShowRow key={s.id} show={s} />
                         ))}
                         {isAuthorized && (
-                          <button onClick={() => { if (confirm(`刪除「${sr.title}」系列及所有關聯演出？`)) onDeleteSeries(sr.id); }}
-                            className="text-xs text-red-400 border border-red-300 rounded-full px-3 py-1 mt-2">
-                            刪除系列
-                          </button>
+                          <div className="flex gap-2 mt-2">
+                            <button onClick={() => onEditSeries(sr)}
+                              className="text-xs text-purple-500 border border-purple-300 rounded-full px-3 py-1">
+                              編輯系列
+                            </button>
+                            <button onClick={() => { if (confirm(`刪除「${sr.title}」系列及所有關聯演出？`)) onDeleteSeries(sr.id); }}
+                              className="text-xs text-red-400 border border-red-300 rounded-full px-3 py-1">
+                              刪除系列
+                            </button>
+                          </div>
                         )}
                       </div>
                     )}

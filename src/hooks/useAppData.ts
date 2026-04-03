@@ -117,6 +117,7 @@ export function useAppData() {
       venue: item.venue || undefined,
       artists,
       links: [],
+      seriesId,
       status: 'interested' as const,
     }));
     const series: Series = {
@@ -129,6 +130,61 @@ export function useAppData() {
       shows: [...d.shows, ...newShows],
       series: [...(d.series || []), series],
     }));
+  }, [setData]);
+
+  const updateSeries = useCallback((
+    id: string,
+    title: string,
+    artists: string[],
+    items: { id?: string; date: string; venue: string }[],
+  ) => {
+    setData(d => {
+      const series = (d.series || []).find(s => s.id === id);
+      if (!series) return d;
+
+      // Existing show IDs in this series
+      const existingIds = new Set(series.showIds);
+
+      // Items with id = keep/update, without id = new
+      const keptIds = new Set(items.filter(i => i.id).map(i => i.id!));
+      const removedIds = [...existingIds].filter(eid => !keptIds.has(eid));
+
+      // New shows to create
+      const newShows: Show[] = items.filter(i => !i.id).map(item => ({
+        id: generateId(),
+        title,
+        date: item.date,
+        venue: item.venue || undefined,
+        artists,
+        links: [],
+        seriesId: id,
+        status: 'interested' as const,
+      }));
+
+      // Update existing shows (title, venue, artists)
+      const updatedShows = d.shows
+        .filter(s => !removedIds.includes(s.id))
+        .map(s => {
+          if (!existingIds.has(s.id)) return s;
+          const item = items.find(i => i.id === s.id);
+          if (!item) return s;
+          return { ...s, title, artists, venue: item.venue || undefined };
+        });
+
+      const allShowIds = [
+        ...items.filter(i => i.id).map(i => i.id!),
+        ...newShows.map(s => s.id),
+      ];
+
+      return {
+        ...d,
+        shows: [...updatedShows, ...newShows],
+        schedules: d.schedules.filter(s => !s.relatedShowId || !removedIds.includes(s.relatedShowId)),
+        series: (d.series || []).map(s =>
+          s.id === id ? { ...s, title, showIds: allShowIds } : s
+        ),
+      };
+    });
   }, [setData]);
 
   const removeSeries = useCallback((id: string) => {
@@ -149,6 +205,6 @@ export function useAppData() {
     addShow, updateShow, removeShow,
     addSchedule, updateSchedule, removeSchedule,
     addExpense, updateExpense, removeExpense,
-    addSeries, removeSeries,
+    addSeries, updateSeries, removeSeries,
   };
 }

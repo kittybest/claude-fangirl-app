@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Show, Schedule } from './types';
+import { Show, Schedule, Series } from './types';
 import { useAppData } from './hooks/useAppData';
 import { useAuth } from './hooks/useAuth';
 import BottomNav from './components/layout/BottomNav';
@@ -20,7 +20,7 @@ export default function App() {
     addShow, updateShow, removeShow,
     addSchedule, updateSchedule, removeSchedule,
     addExpense, updateExpense, removeExpense,
-    addSeries, removeSeries,
+    addSeries, updateSeries, removeSeries,
   } = useAppData();
   const { isAuthorized, login, logout } = useAuth();
 
@@ -32,7 +32,14 @@ export default function App() {
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
   const [duplicatingSchedule, setDuplicatingSchedule] = useState<Schedule | null>(null);
   const [seriesForm, setSeriesForm] = useState(false);
+  const [editingSeries, setEditingSeries] = useState<Series | null>(null);
+  const [expandSeriesId, setExpandSeriesId] = useState<string | null>(null);
   const [loginModal, setLoginModal] = useState(false);
+
+  const handleGoToSeries = (seriesId: string) => {
+    setExpandSeriesId(seriesId);
+    setTab('lists');
+  };
 
   return (
     <div className="max-w-lg mx-auto bg-gray-50 min-h-screen flex flex-col pb-14">
@@ -40,6 +47,7 @@ export default function App() {
         <CalendarView
           shows={data.shows}
           schedules={data.schedules}
+          allSeries={data.series || []}
           isAuthorized={isAuthorized}
           onAddShow={() => setShowForm(true)}
           onAddSchedule={() => setScheduleForm(true)}
@@ -50,6 +58,7 @@ export default function App() {
           onDuplicateSchedule={s => setDuplicatingSchedule(s)}
           onDeleteShow={id => { if (confirm('刪除此演出？')) removeShow(id); }}
           onDeleteSchedule={id => { if (confirm('刪除此時程？')) removeSchedule(id); }}
+          onGoToSeries={handleGoToSeries}
         />
       )}
       {tab === 'lists' && (
@@ -57,7 +66,9 @@ export default function App() {
           shows={data.shows}
           series={data.series || []}
           isAuthorized={isAuthorized}
+          onEditSeries={sr => setEditingSeries(sr)}
           onDeleteSeries={removeSeries}
+          expandSeriesId={expandSeriesId}
         />
       )}
       {tab === 'expenses' && isAuthorized && (
@@ -73,10 +84,24 @@ export default function App() {
       {tab === 'stats' && isAuthorized && (
         <StatsView shows={data.shows} expenses={data.expenses} />
       )}
-      {seriesForm && (
+
+      {/* Series Form (new or edit) */}
+      {(seriesForm || editingSeries) && (
         <SeriesForm
-          onSave={(title, artists, items) => { addSeries(title, artists, items); setSeriesForm(false); }}
-          onClose={() => setSeriesForm(false)}
+          initial={editingSeries ? {
+            series: editingSeries,
+            shows: data.shows.filter(s => editingSeries.showIds.includes(s.id)),
+          } : undefined}
+          onSave={(title, artists, items) => {
+            if (editingSeries) {
+              updateSeries(editingSeries.id, title, artists, items);
+            } else {
+              addSeries(title, artists, items);
+            }
+            setSeriesForm(false);
+            setEditingSeries(null);
+          }}
+          onClose={() => { setSeriesForm(false); setEditingSeries(null); }}
         />
       )}
 
@@ -88,16 +113,13 @@ export default function App() {
 
       <BottomNav
         active={tab}
-        onChange={setTab}
+        onChange={t => { setTab(t); if (t !== 'lists') setExpandSeriesId(null); }}
         isAuthorized={isAuthorized}
         onAuthClick={() => isAuthorized ? logout() : setLoginModal(true)}
       />
 
       {loginModal && (
-        <LoginModal
-          onLogin={login}
-          onClose={() => setLoginModal(false)}
-        />
+        <LoginModal onLogin={login} onClose={() => setLoginModal(false)} />
       )}
 
       {/* Show Form */}

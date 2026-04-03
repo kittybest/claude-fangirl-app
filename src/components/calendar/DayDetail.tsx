@@ -1,4 +1,4 @@
-import { Show, Schedule } from '../../types';
+import { Show, Schedule, Series } from '../../types';
 import { STATUS_CONFIG, SHOW_CATEGORIES, SCHEDULE_TYPES } from '../../utils/constants';
 import { weekdayZh } from '../../utils/date';
 
@@ -7,7 +7,9 @@ interface Props {
   shows: Show[];
   schedules: Schedule[];
   allShows: Show[];
+  allSeries: Series[];
   isAuthorized: boolean;
+  onGoToSeries: (seriesId: string) => void;
   onNavigateToDate: (date: string) => void;
   onAddShow: () => void;
   onAddSchedule: () => void;
@@ -19,7 +21,7 @@ interface Props {
   onDeleteSchedule: (id: string) => void;
 }
 
-export default function DayDetail({ date, shows, schedules, allShows, isAuthorized, onNavigateToDate, onEditShow, onDuplicateShow, onEditSchedule, onDuplicateSchedule, onDeleteShow, onDeleteSchedule }: Props) {
+export default function DayDetail({ date, shows, schedules, allShows, allSeries, isAuthorized, onGoToSeries, onNavigateToDate, onEditShow, onDuplicateShow, onEditSchedule, onDuplicateSchedule, onDeleteShow, onDeleteSchedule }: Props) {
   const d = new Date(date + 'T00:00:00');
   const label = `${d.getMonth() + 1}/${d.getDate()} (${weekdayZh(d)})`;
 
@@ -59,6 +61,15 @@ export default function DayDetail({ date, shows, schedules, allShows, isAuthoriz
           {s.artists.length > 0 && (
             <p className="text-xs text-gray-500 mt-1">{s.artists.join(', ')}</p>
           )}
+          {s.seriesId && (() => {
+            const sr = allSeries.find(sr => sr.id === s.seriesId);
+            return sr ? (
+              <button onClick={() => onGoToSeries(sr.id)}
+                className="text-[10px] text-purple-500 underline mt-0.5 block">
+                {sr.title}
+              </button>
+            ) : null;
+          })()}
           <div className="flex items-center gap-3 mt-1 text-[10px] text-gray-400 flex-wrap">
             {s.time && <span>{s.time}</span>}
             {s.venue && (

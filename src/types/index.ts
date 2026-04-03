@@ -21,6 +21,7 @@ export interface Show {
   seat?: string;
   category?: ShowCategory;
   links: ShowLink[];
+  seriesId?: string;
   ticketPrice?: number;
   ticketCurrency?: Currency;
   ticketPriceTWD?: number;
