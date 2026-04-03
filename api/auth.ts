@@ -9,7 +9,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method === 'POST') {
     const { password } = req.body;
-    const correct = process.env.APP_PASSWORD;
+    const correct = process.env.APP_AUTH_CODE;
     if (!correct) return res.status(500).json({ error: 'Password not configured' });
     return res.status(200).json({ ok: password === correct });
   }
