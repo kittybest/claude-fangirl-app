@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Expense, Show } from '../../types';
+import { showCategoryToExpenseCategory } from '../../utils/constants';
 import ExpenseForm from './ExpenseForm';
 
 interface Props {
@@ -42,7 +43,7 @@ export default function ExpenseList({ expenses, shows, isAuthorized, onAdd, onUp
         id: `show-${s.id}`,
         description: s.title + (s.status === 'cancelled' ? ' (轉售)' : ''),
         date: s.date,
-        category: '門票',
+        category: showCategoryToExpenseCategory(s.category),
         artists: s.artists,
         amount: s.status === 'cancelled'
           ? (s.ticketPrice || 0) - (s.resalePrice || 0)

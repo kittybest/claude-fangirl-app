@@ -8,6 +8,8 @@ export const SHOW_CATEGORIES: { value: ShowCategory; label: string }[] = [
   { value: 'online', label: '線上演出' },
   { value: 'festival', label: '音樂節' },
   { value: 'fansign', label: '簽售' },
+  { value: 'prerecording', label: '預錄' },
+  { value: 'exhibition', label: '展覽' },
   { value: 'other', label: '其他' },
 ];
 
@@ -20,8 +22,19 @@ export const SCHEDULE_TYPES: { value: ScheduleType; label: string }[] = [
 ];
 
 export const EXPENSE_CATEGORIES: ExpenseCategory[] = [
-  '門票', '周邊', '專輯', '會員', '生咖', '展覽', '電影/線上演出', '預錄', '泡泡', '其他',
+  '門票', '周邊', '專輯', '會員', '生咖', '簽售', '展覽', '電影/線上演出', '預錄', '泡泡', '其他',
 ];
+
+export function showCategoryToExpenseCategory(cat?: ShowCategory): ExpenseCategory {
+  switch (cat) {
+    case 'fansign': return '簽售';
+    case 'prerecording': return '預錄';
+    case 'exhibition': return '展覽';
+    case 'movie':
+    case 'online': return '電影/線上演出';
+    default: return '門票';
+  }
+}
 
 export const TIMEZONES = [
   { value: 'Asia/Taipei', label: '台灣 (UTC+8)' },

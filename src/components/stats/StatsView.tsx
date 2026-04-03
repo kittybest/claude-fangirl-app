@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Show, Expense } from '../../types';
-import { SHOW_CATEGORIES } from '../../utils/constants';
+import { SHOW_CATEGORIES, showCategoryToExpenseCategory } from '../../utils/constants';
 
 interface Props {
   shows: Show[];
@@ -43,8 +43,19 @@ export default function StatsView({ shows, expenses }: Props) {
   const totalTWD = showTicketTWD + expenseTWD;
 
   // By expense category
+  // By expense category — group show tickets by their mapped category
   const byCategory: Record<string, number> = {};
-  if (showTicketTWD > 0) byCategory['門票 (演出)'] = showTicketTWD;
+  for (const s of shows.filter(s => {
+    const y = parseInt(s.date.slice(0, 4));
+    const m = parseInt(s.date.slice(5, 7));
+    return y === year && (month === null || m === month);
+  })) {
+    const cat = showCategoryToExpenseCategory(s.category);
+    const net = s.status === 'cancelled'
+      ? (s.ticketPriceTWD || 0) - (s.resalePriceTWD || 0)
+      : (s.ticketPriceTWD || 0);
+    if (net > 0) byCategory[cat] = (byCategory[cat] || 0) + net;
+  }
   for (const e of filteredExpenses) {
     byCategory[e.category] = (byCategory[e.category] || 0) + e.amountTWD;
   }
