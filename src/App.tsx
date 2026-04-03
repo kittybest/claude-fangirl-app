@@ -24,6 +24,7 @@ export default function App() {
   const [tab, setTab] = useState<Tab>('calendar');
   const [showForm, setShowForm] = useState(false);
   const [editingShow, setEditingShow] = useState<Show | null>(null);
+  const [duplicatingShow, setDuplicatingShow] = useState<Show | null>(null);
   const [scheduleForm, setScheduleForm] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
   const [duplicatingSchedule, setDuplicatingSchedule] = useState<Schedule | null>(null);
@@ -39,6 +40,7 @@ export default function App() {
           onAddShow={() => setShowForm(true)}
           onAddSchedule={() => setScheduleForm(true)}
           onEditShow={s => setEditingShow(s)}
+          onDuplicateShow={s => setDuplicatingShow(s)}
           onEditSchedule={s => setEditingSchedule(s)}
           onDuplicateSchedule={s => setDuplicatingSchedule(s)}
           onDeleteShow={id => { if (confirm('刪除此演出？')) removeShow(id); }}
@@ -79,16 +81,18 @@ export default function App() {
       )}
 
       {/* Show Form */}
-      {(showForm || editingShow) && (
+      {(showForm || editingShow || duplicatingShow) && (
         <ShowForm
-          initial={editingShow ?? undefined}
+          initial={editingShow ?? duplicatingShow ?? undefined}
+          isEdit={!!editingShow}
           onSave={show => {
             if (editingShow) updateShow(editingShow.id, show);
             else addShow(show);
             setShowForm(false);
             setEditingShow(null);
+            setDuplicatingShow(null);
           }}
-          onClose={() => { setShowForm(false); setEditingShow(null); }}
+          onClose={() => { setShowForm(false); setEditingShow(null); setDuplicatingShow(null); }}
         />
       )}
 

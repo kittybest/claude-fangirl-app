@@ -12,13 +12,14 @@ interface Props {
   onAddShow: () => void;
   onAddSchedule: () => void;
   onEditShow: (show: Show) => void;
+  onDuplicateShow: (show: Show) => void;
   onEditSchedule: (schedule: Schedule) => void;
   onDuplicateSchedule: (schedule: Schedule) => void;
   onDeleteShow: (id: string) => void;
   onDeleteSchedule: (id: string) => void;
 }
 
-export default function DayDetail({ date, shows, schedules, allShows, isAuthorized, onNavigateToDate, onEditShow, onEditSchedule, onDuplicateSchedule, onDeleteShow, onDeleteSchedule }: Props) {
+export default function DayDetail({ date, shows, schedules, allShows, isAuthorized, onNavigateToDate, onEditShow, onDuplicateShow, onEditSchedule, onDuplicateSchedule, onDeleteShow, onDeleteSchedule }: Props) {
   const d = new Date(date + 'T00:00:00');
   const label = `${d.getMonth() + 1}/${d.getDate()} (${weekdayZh(d)})`;
 
@@ -82,6 +83,7 @@ export default function DayDetail({ date, shows, schedules, allShows, isAuthoriz
           {isAuthorized && (
             <div className="flex gap-2 mt-2">
               <button onClick={() => onEditShow(s)} className="flex-1 text-xs text-purple-500 border border-purple-300 rounded-full py-1.5">編輯</button>
+              <button onClick={() => onDuplicateShow(s)} className="flex-1 text-xs text-blue-500 border border-blue-300 rounded-full py-1.5">複製</button>
               <button onClick={() => onDeleteShow(s.id)} className="flex-1 text-xs text-red-400 border border-red-300 rounded-full py-1.5">刪除</button>
             </div>
           )}

@@ -5,11 +5,12 @@ import { CURRENCIES, convertToTWD } from '../../utils/currency';
 
 interface Props {
   initial?: Show;
+  isEdit?: boolean;
   onSave: (show: Omit<Show, 'id'>) => void;
   onClose: () => void;
 }
 
-export default function ShowForm({ initial, onSave, onClose }: Props) {
+export default function ShowForm({ initial, isEdit, onSave, onClose }: Props) {
   const [title, setTitle] = useState(initial?.title ?? '');
   const [date, setDate] = useState(initial?.date ?? new Date().toISOString().slice(0, 10));
   const [time, setTime] = useState(initial?.time ?? '');
@@ -70,7 +71,7 @@ export default function ShowForm({ initial, onSave, onClose }: Props) {
     <div className="fixed inset-0 bg-black/40 z-50 flex items-end justify-center">
       <div className="bg-white rounded-t-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-4">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-bold">{initial ? '編輯演出' : '新增演出'}</h2>
+          <h2 className="text-base font-bold">{isEdit ? '編輯演出' : initial ? '複製演出' : '新增演出'}</h2>
           <button onClick={onClose} className="text-gray-400 text-xl">&times;</button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-2.5">
@@ -164,7 +165,7 @@ export default function ShowForm({ initial, onSave, onClose }: Props) {
           <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="備註"
             className="w-full border rounded-lg px-3 py-2 text-sm" rows={2} />
           <button type="submit" className="w-full bg-purple-500 text-white rounded-full py-2.5 text-sm font-medium">
-            {initial ? '儲存' : '新增'}
+            {isEdit ? '儲存' : '新增'}
           </button>
         </form>
       </div>

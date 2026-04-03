@@ -11,13 +11,14 @@ interface Props {
   onAddShow: () => void;
   onAddSchedule: () => void;
   onEditShow: (show: Show) => void;
+  onDuplicateShow: (show: Show) => void;
   onEditSchedule: (schedule: Schedule) => void;
   onDuplicateSchedule: (schedule: Schedule) => void;
   onDeleteShow: (id: string) => void;
   onDeleteSchedule: (id: string) => void;
 }
 
-export default function CalendarView({ shows, schedules, isAuthorized, onAddShow, onAddSchedule, onEditShow, onEditSchedule, onDuplicateSchedule, onDeleteShow, onDeleteSchedule }: Props) {
+export default function CalendarView({ shows, schedules, isAuthorized, onAddShow, onAddSchedule, onEditShow, onDuplicateShow, onEditSchedule, onDuplicateSchedule, onDeleteShow, onDeleteSchedule }: Props) {
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
@@ -122,6 +123,7 @@ export default function CalendarView({ shows, schedules, isAuthorized, onAddShow
             onAddShow={onAddShow}
             onAddSchedule={onAddSchedule}
             onEditShow={onEditShow}
+            onDuplicateShow={onDuplicateShow}
             onEditSchedule={onEditSchedule}
             onDuplicateSchedule={onDuplicateSchedule}
             onDeleteShow={onDeleteShow}
