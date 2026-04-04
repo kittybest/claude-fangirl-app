@@ -9,18 +9,28 @@ const empty: AppData = { shows: [], schedules: [], expenses: [], series: [] };
 function getLocal(): AppData {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : empty;
+    return raw ? normalize(JSON.parse(raw)) : empty;
   } catch {
     return empty;
   }
+}
+
+function normalize(data: Record<string, unknown>): AppData {
+  return {
+    shows: Array.isArray(data.shows) ? data.shows : [],
+    schedules: Array.isArray(data.schedules) ? data.schedules : [],
+    expenses: Array.isArray(data.expenses) ? data.expenses : [],
+    series: Array.isArray(data.series) ? data.series : [],
+  } as AppData;
 }
 
 async function fetchRemote(): Promise<AppData> {
   try {
     const res = await fetch('/api/data');
     if (res.ok) {
-      const data = await res.json();
-      if (data.shows?.length > 0 || data.schedules?.length > 0 || data.expenses?.length > 0) {
+      const raw = await res.json();
+      const data = normalize(raw);
+      if (data.shows.length > 0 || data.schedules.length > 0 || data.expenses.length > 0 || data.series.length > 0) {
         return data;
       }
       // Remote empty — check local for migration
