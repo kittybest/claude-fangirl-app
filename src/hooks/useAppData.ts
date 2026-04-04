@@ -88,7 +88,31 @@ export function useAppData() {
   }, [setData]);
 
   const updateShow = useCallback((id: string, updates: Partial<Omit<Show, 'id'>>) => {
-    setData(d => ({ ...d, shows: d.shows.map(s => s.id === id ? { ...s, ...updates } : s) }));
+    setData(d => {
+      const oldShow = d.shows.find(s => s.id === id);
+      const oldSeriesId = oldShow?.seriesId;
+      const newSeriesId = updates.seriesId;
+
+      let series = d.series;
+      // If seriesId changed, update both old and new series' showIds
+      if (newSeriesId !== undefined && newSeriesId !== oldSeriesId) {
+        series = series.map(sr => {
+          if (sr.id === oldSeriesId) {
+            return { ...sr, showIds: sr.showIds.filter(sid => sid !== id) };
+          }
+          if (sr.id === newSeriesId) {
+            return { ...sr, showIds: [...sr.showIds, id] };
+          }
+          return sr;
+        });
+      }
+
+      return {
+        ...d,
+        shows: d.shows.map(s => s.id === id ? { ...s, ...updates } : s),
+        series,
+      };
+    });
   }, [setData]);
 
   const removeShow = useCallback((id: string) => {
