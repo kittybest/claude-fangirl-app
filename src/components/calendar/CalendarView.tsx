@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Show, Schedule } from '../../types';
 import { getDaysInMonth, getFirstDayOfWeek, formatDate, parseDate } from '../../utils/date';
 import { STATUS_CONFIG } from '../../utils/constants';
@@ -8,8 +8,8 @@ interface Props {
   shows: Show[];
   schedules: Schedule[];
   isAuthorized: boolean;
-  onAddShow: () => void;
-  onAddSchedule: () => void;
+  onAddShow: (defaultDate?: string) => void;
+  onAddSchedule: (defaultDate?: string) => void;
   onAddSeries: () => void;
   onEditShow: (show: Show) => void;
   onDuplicateShow: (show: Show) => void;
@@ -28,6 +28,19 @@ export default function CalendarView({ shows, schedules, isAuthorized, onAddShow
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [fabOpen, setFabOpen] = useState(false);
 
+  // Swipe handling
+  const touchStartX = useRef<number | null>(null);
+  const handleTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const diff = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(diff) > 60) {
+      if (diff > 0) prev();
+      else next();
+    }
+    touchStartX.current = null;
+  };
+
   const navigateToDate = (dateStr: string) => {
     const { year: y, month: m } = parseDate(dateStr);
     setYear(y);
@@ -42,8 +55,8 @@ export default function CalendarView({ shows, schedules, isAuthorized, onAddShow
   const prev = () => { if (month === 0) { setYear(y => y - 1); setMonth(11); } else setMonth(m => m - 1); setSelectedDate(null); };
   const next = () => { if (month === 11) { setYear(y => y + 1); setMonth(0); } else setMonth(m => m + 1); setSelectedDate(null); };
 
-  // Get shows for a date (exclude cancelled)
-  const showsForDate = (dateStr: string) => shows.filter(s => s.date === dateStr && s.status !== 'cancelled');
+  // Show all shows for date (including cancelled)
+  const showsForDate = (dateStr: string) => shows.filter(s => s.date === dateStr);
 
   // Convert schedule datetime+timezone to local date
   const schedulesForDate = (dateStr: string) => schedules.filter(s => {
@@ -55,9 +68,19 @@ export default function CalendarView({ shows, schedules, isAuthorized, onAddShow
     } catch { return false; }
   });
 
+  // Calendar dots: show cancelled with different style
+  const dotsForDate = (dateStr: string) => {
+    const dayShows = shows.filter(s => s.date === dateStr);
+    const daySchedules = schedulesForDate(dateStr);
+    return { dayShows, daySchedules };
+  };
+
   const days = [];
   for (let i = 0; i < firstDay; i++) days.push(null);
   for (let d = 1; d <= daysInMonth; d++) days.push(d);
+
+  // Default date for new items: selected date or today
+  const defaultDate = selectedDate || todayStr;
 
   return (
     <div className="flex flex-col h-full">
@@ -75,13 +98,16 @@ export default function CalendarView({ shows, schedules, isAuthorized, onAddShow
         ))}
       </div>
 
-      {/* Calendar grid */}
-      <div className="grid grid-cols-7 bg-white flex-shrink-0">
+      {/* Calendar grid — swipeable */}
+      <div
+        className="grid grid-cols-7 bg-white flex-shrink-0"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         {days.map((day, i) => {
           if (!day) return <div key={`empty-${i}`} className="border-b border-r border-gray-100 h-14" />;
           const dateStr = formatDate(year, month, day);
-          const dayShows = showsForDate(dateStr);
-          const daySchedules = schedulesForDate(dateStr);
+          const { dayShows, daySchedules } = dotsForDate(dateStr);
           const isToday = dateStr === todayStr;
           const isSelected = dateStr === selectedDate;
           const hasItems = dayShows.length > 0 || daySchedules.length > 0;
@@ -102,7 +128,9 @@ export default function CalendarView({ shows, schedules, isAuthorized, onAddShow
               {hasItems && (
                 <div className="flex flex-wrap gap-0.5 mt-0.5">
                   {dayShows.map(s => (
-                    <span key={s.id} className={`w-1.5 h-1.5 rounded-full ${STATUS_CONFIG[s.status].dot}`} />
+                    <span key={s.id} className={`w-1.5 h-1.5 rounded-full ${
+                      s.status === 'cancelled' ? 'bg-gray-300' : STATUS_CONFIG[s.status].dot
+                    }`} />
                   ))}
                   {daySchedules.map(s => (
                     <span key={s.id} className="w-1.5 h-1.5 rounded-full bg-blue-400" />
@@ -156,12 +184,12 @@ export default function CalendarView({ shows, schedules, isAuthorized, onAddShow
                   <span className="w-7 h-7 rounded-full bg-green-500 text-white flex items-center justify-center text-xs">📋</span>
                   新增系列
                 </button>
-                <button onClick={() => { onAddSchedule(); setFabOpen(false); }}
+                <button onClick={() => { onAddSchedule(defaultDate); setFabOpen(false); }}
                   className="flex items-center gap-2 bg-white shadow-lg rounded-full pl-3 pr-4 py-2 text-sm text-gray-700 border">
                   <span className="w-7 h-7 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs">⏰</span>
                   新增時程
                 </button>
-                <button onClick={() => { onAddShow(); setFabOpen(false); }}
+                <button onClick={() => { onAddShow(defaultDate); setFabOpen(false); }}
                   className="flex items-center gap-2 bg-white shadow-lg rounded-full pl-3 pr-4 py-2 text-sm text-gray-700 border">
                   <span className="w-7 h-7 rounded-full bg-purple-500 text-white flex items-center justify-center text-xs">🎵</span>
                   新增演出

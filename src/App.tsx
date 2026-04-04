@@ -26,9 +26,11 @@ export default function App() {
 
   const [tab, setTab] = useState<Tab>('calendar');
   const [showForm, setShowForm] = useState(false);
+  const [showFormDate, setShowFormDate] = useState<string | undefined>();
   const [editingShow, setEditingShow] = useState<Show | null>(null);
   const [duplicatingShow, setDuplicatingShow] = useState<Show | null>(null);
   const [scheduleForm, setScheduleForm] = useState(false);
+  const [scheduleFormDate, setScheduleFormDate] = useState<string | undefined>();
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
   const [duplicatingSchedule, setDuplicatingSchedule] = useState<Schedule | null>(null);
   const [seriesForm, setSeriesForm] = useState(false);
@@ -49,8 +51,8 @@ export default function App() {
           schedules={data.schedules}
           allSeries={data.series || []}
           isAuthorized={isAuthorized}
-          onAddShow={() => setShowForm(true)}
-          onAddSchedule={() => setScheduleForm(true)}
+          onAddShow={(d) => { setShowFormDate(d); setShowForm(true); }}
+          onAddSchedule={(d) => { setScheduleFormDate(d); setScheduleForm(true); }}
           onAddSeries={() => setSeriesForm(true)}
           onEditShow={s => setEditingShow(s)}
           onDuplicateShow={s => setDuplicatingShow(s)}
@@ -127,6 +129,8 @@ export default function App() {
         <ShowForm
           initial={editingShow ?? duplicatingShow ?? undefined}
           isEdit={!!editingShow}
+          defaultDate={showFormDate}
+          allSeries={data.series || []}
           onSave={show => {
             if (editingShow) updateShow(editingShow.id, show);
             else addShow(show);
@@ -143,6 +147,7 @@ export default function App() {
         <ScheduleForm
           initial={editingSchedule ?? duplicatingSchedule ?? undefined}
           isEdit={!!editingSchedule}
+          defaultDate={scheduleFormDate}
           shows={data.shows}
           onSave={schedule => {
             if (editingSchedule) updateSchedule(editingSchedule.id, schedule);

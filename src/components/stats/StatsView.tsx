@@ -11,11 +11,13 @@ export default function StatsView({ shows, expenses }: Props) {
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState<number | null>(null); // null = full year
 
+  // Only count ticketed and cancelled for stats (not interested)
   const filteredShows = shows.filter(s => {
     const y = parseInt(s.date.slice(0, 4));
     const m = parseInt(s.date.slice(5, 7));
-    return y === year && (month === null || m === month) && s.status !== 'cancelled';
+    return y === year && (month === null || m === month) && s.status !== 'interested';
   });
+  const attendedShows = filteredShows.filter(s => s.status === 'ticketed');
 
   const filteredExpenses = expenses.filter(e => {
     const y = parseInt(e.date.slice(0, 4));
@@ -23,21 +25,13 @@ export default function StatsView({ shows, expenses }: Props) {
     return y === year && (month === null || m === month);
   });
 
-  // Show ticket expenses (non-cancelled shows with price)
-  const showTicketTWD = shows
-    .filter(s => {
-      const y = parseInt(s.date.slice(0, 4));
-      const m = parseInt(s.date.slice(5, 7));
-      return y === year && (month === null || m === month);
-    })
-    .reduce((sum, s) => {
-      if (s.status === 'cancelled') {
-        const buy = s.ticketPriceTWD || 0;
-        const sell = s.resalePriceTWD || 0;
-        return sum + (buy - sell); // net cost
-      }
-      return sum + (s.ticketPriceTWD || 0);
-    }, 0);
+  // Show ticket expenses (only ticketed + cancelled, not interested)
+  const showTicketTWD = filteredShows.reduce((sum, s) => {
+    if (s.status === 'cancelled') {
+      return sum + ((s.ticketPriceTWD || 0) - (s.resalePriceTWD || 0));
+    }
+    return sum + (s.ticketPriceTWD || 0);
+  }, 0);
 
   const expenseTWD = filteredExpenses.reduce((sum, e) => sum + e.amountTWD, 0);
   const totalTWD = showTicketTWD + expenseTWD;
@@ -45,11 +39,7 @@ export default function StatsView({ shows, expenses }: Props) {
   // By expense category
   // By expense category — group show tickets by their mapped category
   const byCategory: Record<string, number> = {};
-  for (const s of shows.filter(s => {
-    const y = parseInt(s.date.slice(0, 4));
-    const m = parseInt(s.date.slice(5, 7));
-    return y === year && (month === null || m === month);
-  })) {
+  for (const s of filteredShows) {
     const cat = showCategoryToExpenseCategory(s.category);
     const net = s.status === 'cancelled'
       ? (s.ticketPriceTWD || 0) - (s.resalePriceTWD || 0)
@@ -62,7 +52,7 @@ export default function StatsView({ shows, expenses }: Props) {
 
   // By artist
   const byArtist: Record<string, { count: number; spent: number }> = {};
-  for (const s of filteredShows) {
+  for (const s of attendedShows) {
     for (const a of s.artists) {
       if (!byArtist[a]) byArtist[a] = { count: 0, spent: 0 };
       byArtist[a].count++;
@@ -78,7 +68,7 @@ export default function StatsView({ shows, expenses }: Props) {
 
   // By show category
   const byShowCategory: Record<string, number> = {};
-  for (const s of filteredShows) {
+  for (const s of attendedShows) {
     const cat = s.category || 'other';
     byShowCategory[cat] = (byShowCategory[cat] || 0) + 1;
   }
@@ -110,7 +100,7 @@ export default function StatsView({ shows, expenses }: Props) {
           <p className="text-xs text-gray-400">總花費</p>
           <p className="text-3xl font-bold text-purple-600 mt-1">NT${totalTWD.toLocaleString()}</p>
           <p className="text-xs text-gray-400 mt-1">
-            演出 {filteredShows.length} 場
+            演出 {attendedShows.length} 場
           </p>
         </div>
 

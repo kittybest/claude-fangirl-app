@@ -76,7 +76,15 @@ export function useAppData() {
 
   // Shows
   const addShow = useCallback((show: Omit<Show, 'id'>) => {
-    setData(d => ({ ...d, shows: [...d.shows, { ...show, id: generateId() }] }));
+    const newId = generateId();
+    setData(d => ({
+      ...d,
+      shows: [...d.shows, { ...show, id: newId }],
+      // If show has seriesId, add it to that series' showIds
+      series: show.seriesId
+        ? d.series.map(sr => sr.id === show.seriesId ? { ...sr, showIds: [...sr.showIds, newId] } : sr)
+        : d.series,
+    }));
   }, [setData]);
 
   const updateShow = useCallback((id: string, updates: Partial<Omit<Show, 'id'>>) => {

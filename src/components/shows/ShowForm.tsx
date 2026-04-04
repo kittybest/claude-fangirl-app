@@ -1,19 +1,28 @@
 import { useState } from 'react';
-import { Show, ShowLink, ShowStatus, ShowCategory, Currency } from '../../types';
+import { Show, ShowLink, ShowStatus, ShowCategory, Currency, Series } from '../../types';
 import { SHOW_CATEGORIES, STATUS_CONFIG, TIMEZONES } from '../../utils/constants';
 import { CURRENCIES, convertToTWD } from '../../utils/currency';
 
 interface Props {
   initial?: Show;
   isEdit?: boolean;
+  defaultDate?: string;
+  allSeries?: Series[];
   onSave: (show: Omit<Show, 'id'>) => void;
   onClose: () => void;
 }
 
-export default function ShowForm({ initial, isEdit, onSave, onClose }: Props) {
+export default function ShowForm({ initial, isEdit, defaultDate, allSeries = [], onSave, onClose }: Props) {
   const [title, setTitle] = useState(initial?.title ?? '');
-  const [date, setDate] = useState(initial?.date ?? new Date().toISOString().slice(0, 10));
-  const [time, setTime] = useState(initial?.time ?? '');
+  const [date, setDate] = useState(initial?.date ?? defaultDate ?? new Date().toISOString().slice(0, 10));
+  const [time, setTime] = useState(initial?.time ?? '18:00');
+  const [seriesId, setSeriesId] = useState(initial?.seriesId ?? '');
+  const [seriesSearch, setSeriesSearch] = useState('');
+  const [seriesSearchOpen, setSeriesSearchOpen] = useState(false);
+  const selectedSeries = seriesId ? allSeries.find(s => s.id === seriesId) : null;
+  const filteredSeries = seriesSearch.trim()
+    ? allSeries.filter(s => s.title.toLowerCase().includes(seriesSearch.toLowerCase())).slice(0, 8)
+    : [];
   const [timezone, setTimezone] = useState(initial?.timezone ?? 'Asia/Taipei');
   const [artists, setArtists] = useState(initial?.artists.join(', ') ?? '');
   const [venue, setVenue] = useState(initial?.venue ?? '');
@@ -56,6 +65,7 @@ export default function ShowForm({ initial, isEdit, onSave, onClose }: Props) {
       seat: seat || undefined,
       category: category || undefined,
       links,
+      seriesId: seriesId || undefined,
       ticketPrice: price,
       ticketCurrency: price ? ticketCurrency : undefined,
       ticketPriceTWD: price ? convertToTWD(price, ticketCurrency) : undefined,
@@ -100,6 +110,36 @@ export default function ShowForm({ initial, isEdit, onSave, onClose }: Props) {
             <option value="">類別 (選填)</option>
             {SHOW_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
           </select>
+
+          {/* Series */}
+          <div className="relative">
+            {selectedSeries ? (
+              <div className="flex items-center gap-2 border rounded-lg px-3 py-2 text-sm bg-gray-50">
+                <span className="flex-1 text-gray-700 truncate">系列: {selectedSeries.title}</span>
+                <button type="button" onClick={() => { setSeriesId(''); setSeriesSearch(''); }}
+                  className="text-gray-400 text-xs">✕</button>
+              </div>
+            ) : (
+              <input
+                value={seriesSearch}
+                onChange={e => { setSeriesSearch(e.target.value); setSeriesSearchOpen(true); }}
+                onFocus={() => setSeriesSearchOpen(true)}
+                placeholder="加入系列 (選填)"
+                className="w-full border rounded-lg px-3 py-2 text-sm"
+              />
+            )}
+            {seriesSearchOpen && filteredSeries.length > 0 && (
+              <ul className="absolute z-10 w-full bg-white border rounded-lg mt-1 shadow-lg max-h-40 overflow-y-auto">
+                {filteredSeries.map(s => (
+                  <li key={s.id}
+                    onClick={() => { setSeriesId(s.id); setSeriesSearch(''); setSeriesSearchOpen(false); }}
+                    className="px-3 py-2 text-xs hover:bg-purple-50 cursor-pointer border-b border-gray-50 last:border-0 truncate">
+                    {s.title}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
 
           {/* Links */}
           <div>

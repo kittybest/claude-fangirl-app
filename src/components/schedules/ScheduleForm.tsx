@@ -5,22 +5,23 @@ import { SCHEDULE_TYPES, TIMEZONES } from '../../utils/constants';
 interface Props {
   initial?: Schedule;
   isEdit?: boolean;
+  defaultDate?: string;
   shows: Show[];
   onSave: (schedule: Omit<Schedule, 'id'>) => void;
   onClose: () => void;
 }
 
-export default function ScheduleForm({ initial, isEdit, shows, onSave, onClose }: Props) {
+export default function ScheduleForm({ initial, isEdit, defaultDate, shows, onSave, onClose }: Props) {
   const [title, setTitle] = useState(initial?.title ?? '');
   const [date, setDate] = useState(() => {
-    if (!initial) return new Date().toISOString().slice(0, 10);
+    if (!initial) return defaultDate || new Date().toISOString().slice(0, 10);
     // Convert stored UTC back to the target timezone for display
     const utc = new Date(initial.datetime);
     const inTz = new Date(utc.toLocaleString('en-US', { timeZone: initial.timezone }));
     return `${inTz.getFullYear()}-${String(inTz.getMonth() + 1).padStart(2, '0')}-${String(inTz.getDate()).padStart(2, '0')}`;
   });
   const [time, setTime] = useState(() => {
-    if (!initial) return '12:00';
+    if (!initial) return '18:00';
     const utc = new Date(initial.datetime);
     const inTz = new Date(utc.toLocaleString('en-US', { timeZone: initial.timezone }));
     return `${String(inTz.getHours()).padStart(2, '0')}:${String(inTz.getMinutes()).padStart(2, '0')}`;
