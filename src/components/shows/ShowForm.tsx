@@ -36,7 +36,7 @@ export default function ShowForm({ initial, isEdit, defaultDate, allSeries = [],
   const [ticketCurrency, setTicketCurrency] = useState<Currency>(initial?.ticketCurrency ?? 'TWD');
   const [status, setStatus] = useState<ShowStatus>(initial?.status ?? 'interested');
   const [resalePrice, setResalePrice] = useState(initial?.resalePrice?.toString() ?? '');
-  const [resaleCurrency, setResaleCurrency] = useState<Currency>(initial?.resaleCurrency ?? 'TWD');
+  const [resaleCurrency, setResaleCurrency] = useState<Currency>(initial?.resaleCurrency ?? initial?.ticketCurrency ?? 'TWD');
   const [notes, setNotes] = useState(initial?.notes ?? '');
 
   const addLink = () => {
@@ -199,6 +199,15 @@ export default function ShowForm({ initial, isEdit, defaultDate, allSeries = [],
                   {CURRENCIES.map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
+              {resalePrice && (
+                <p className="text-[10px] text-gray-400 mt-1">
+                  ≈ NT${convertToTWD(parseFloat(resalePrice) || 0, resaleCurrency).toLocaleString()}
+                  {ticketPrice && ` (淨花費: NT$${(
+                    convertToTWD(parseFloat(ticketPrice) || 0, ticketCurrency) -
+                    convertToTWD(parseFloat(resalePrice) || 0, resaleCurrency)
+                  ).toLocaleString()})`}
+                </p>
+              )}
             </div>
           )}
 
