@@ -29,6 +29,7 @@ export interface Show {
   resalePrice?: number;
   resaleCurrency?: Currency;
   resalePriceTWD?: number;
+  rating?: number;
   notes?: string;
 }
 

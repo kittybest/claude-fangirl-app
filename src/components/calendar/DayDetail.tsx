@@ -1,6 +1,7 @@
 import { Show, Schedule, Series } from '../../types';
 import { STATUS_CONFIG, SHOW_CATEGORIES, SCHEDULE_TYPES } from '../../utils/constants';
 import { weekdayZh } from '../../utils/date';
+import StarRating from '../ui/StarRating';
 
 interface Props {
   date: string;
@@ -81,6 +82,7 @@ export default function DayDetail({ date, shows, schedules, allShows, allSeries,
             {s.category && <span>{SHOW_CATEGORIES.find(c => c.value === s.category)?.label}</span>}
             {s.ticketPriceTWD != null && <span>NT${s.ticketPriceTWD.toLocaleString()}</span>}
           </div>
+          {s.rating ? <div className="mt-1"><StarRating value={s.rating} size="sm" /></div> : null}
           {s.notes && <p className="text-[10px] text-gray-400 mt-1">{s.notes}</p>}
           {s.links.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-1">

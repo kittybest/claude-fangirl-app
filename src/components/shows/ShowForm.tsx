@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Show, ShowLink, ShowStatus, ShowCategory, Currency, Series } from '../../types';
 import { SHOW_CATEGORIES, STATUS_CONFIG, TIMEZONES } from '../../utils/constants';
 import { CURRENCIES, convertToTWD } from '../../utils/currency';
+import StarRating from '../ui/StarRating';
 
 interface Props {
   initial?: Show;
@@ -37,6 +38,7 @@ export default function ShowForm({ initial, isEdit, defaultDate, allSeries = [],
   const [status, setStatus] = useState<ShowStatus>(initial?.status ?? 'interested');
   const [resalePrice, setResalePrice] = useState(initial?.resalePrice?.toString() ?? '');
   const [resaleCurrency, setResaleCurrency] = useState<Currency>(initial?.resaleCurrency ?? initial?.ticketCurrency ?? 'TWD');
+  const [rating, setRating] = useState(initial?.rating ?? 0);
   const [notes, setNotes] = useState(initial?.notes ?? '');
 
   const addLink = () => {
@@ -73,6 +75,7 @@ export default function ShowForm({ initial, isEdit, defaultDate, allSeries = [],
       resalePrice: resale,
       resaleCurrency: resale ? resaleCurrency : undefined,
       resalePriceTWD: resale ? convertToTWD(resale, resaleCurrency) : undefined,
+      rating: rating || undefined,
       notes: notes || undefined,
     });
   };
@@ -211,6 +214,10 @@ export default function ShowForm({ initial, isEdit, defaultDate, allSeries = [],
             </div>
           )}
 
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500">評分</span>
+            <StarRating value={rating} onChange={setRating} size="md" />
+          </div>
           <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="備註"
             className="w-full border rounded-lg px-3 py-2 text-sm" rows={2} />
           <button type="submit" className="w-full bg-purple-500 text-white rounded-full py-2.5 text-sm font-medium">
