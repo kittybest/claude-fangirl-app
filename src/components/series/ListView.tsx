@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Show, Series } from '../../types';
 import { STATUS_CONFIG } from '../../utils/constants';
 
-type SubTab = 'series' | 'artists';
+type SubTab = 'series' | 'artists' | 'upcoming';
 
 interface Props {
   shows: Show[];
@@ -29,6 +29,11 @@ export default function ListView({ shows, series, isAuthorized, onEditSeries, on
   }
   const sortedArtists = Object.entries(artistMap).sort((a, b) => b[1].length - a[1].length);
 
+  const today = new Date().toLocaleDateString('sv-SE'); // YYYY-MM-DD in local timezone
+  const upcomingShows = shows
+    .filter(s => s.status !== 'cancelled' && s.date >= today)
+    .sort((a, b) => a.date.localeCompare(b.date));
+
   return (
     <div className="flex flex-col h-full">
       <div className="bg-white border-b px-4 py-3">
@@ -45,6 +50,12 @@ export default function ListView({ shows, series, isAuthorized, onEditSeries, on
               subTab === 'artists' ? 'bg-purple-100 text-purple-700 border-purple-300' : 'border-gray-200 text-gray-400'
             }`}>
             依藝人
+          </button>
+          <button onClick={() => setSubTab('upcoming')}
+            className={`flex-1 text-xs py-1.5 rounded-full border transition-colors ${
+              subTab === 'upcoming' ? 'bg-purple-100 text-purple-700 border-purple-300' : 'border-gray-200 text-gray-400'
+            }`}>
+            即將到來
           </button>
         </div>
       </div>
@@ -92,7 +103,7 @@ export default function ListView({ shows, series, isAuthorized, onEditSeries, on
               })}
             </div>
           )
-        ) : (
+        ) : subTab === 'artists' ? (
           sortedArtists.length === 0 ? (
             <p className="text-gray-400 text-xs text-center py-8">沒有藝人資料</p>
           ) : (
@@ -117,6 +128,16 @@ export default function ListView({ shows, series, isAuthorized, onEditSeries, on
                   </div>
                 );
               })}
+            </div>
+          )
+        ) : (
+          upcomingShows.length === 0 ? (
+            <p className="text-gray-400 text-xs text-center py-8">沒有即將到來的演出</p>
+          ) : (
+            <div className="bg-white px-4 py-2">
+              {upcomingShows.map(s => (
+                <ShowRow key={s.id} show={s} />
+              ))}
             </div>
           )
         )}
