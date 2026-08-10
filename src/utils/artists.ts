@@ -193,6 +193,94 @@ export function mergeArtistData(data: AppData, fromId: string, intoId: string): 
   };
 }
 
+export interface ArtistBucket {
+  count: number;
+  spent: number;
+}
+
+export interface ArtistStatRow {
+  key: string;
+  name: string;
+  /** Group rows roll their members in; everyone else equals `direct`. */
+  total: ArtistBucket;
+  direct: ArtistBucket;
+  members: { id: string; name: string; bucket: ArtistBucket }[];
+}
+
+type StatShow = { artists: string[]; artistIds?: string[]; ticketPriceTWD?: number };
+type StatExpense = { artists: string[]; artistIds?: string[]; amountTWD: number };
+
+/**
+ * Keyed by artist id so name variants can't split a person in two. Records that
+ * predate ids fall back to their raw text rather than vanishing from the totals.
+ */
+export function aggregateByArtist(
+  artists: Artist[],
+  shows: StatShow[],
+  expenses: StatExpense[],
+): ArtistStatRow[] {
+  const index = buildArtistIndex(artists);
+  const keysFor = (record: { artists: string[]; artistIds?: string[] }): Set<string> => {
+    if (record.artistIds?.length) return new Set(record.artistIds);
+    return new Set(record.artists.map(name => findArtist(index, name)?.id ?? `raw:${name}`));
+  };
+  const showKeys = shows.map(show => ({ show, keys: keysFor(show) }));
+  const expenseKeys = expenses.map(expense => ({ expense, keys: keysFor(expense) }));
+
+  const direct = new Map<string, ArtistBucket>();
+  const bump = (key: string, count: number, spent: number) => {
+    const bucket = direct.get(key) || { count: 0, spent: 0 };
+    bucket.count += count;
+    bucket.spent += spent;
+    direct.set(key, bucket);
+  };
+  for (const { show, keys } of showKeys) {
+    for (const key of keys) bump(key, 1, show.ticketPriceTWD || 0);
+  }
+  for (const { expense, keys } of expenseKeys) {
+    for (const key of keys) bump(key, 0, expense.amountTWD);
+  }
+
+  const membersByGroup = new Map<string, string[]>();
+  for (const artist of artists) {
+    for (const groupId of artist.groupIds || []) {
+      membersByGroup.set(groupId, [...(membersByGroup.get(groupId) || []), artist.id]);
+    }
+  }
+
+  // A group counts a record once even when it is tagged with both the group and
+  // one of its members. Members never roll the group back in.
+  const totals = new Map<string, ArtistBucket>([...direct].map(([key, b]) => [key, { ...b }]));
+  for (const [groupId, memberIds] of membersByGroup) {
+    const scope = new Set([groupId, ...memberIds]);
+    const inScope = (keys: Set<string>) => [...keys].some(key => scope.has(key));
+    const bucket: ArtistBucket = { count: 0, spent: 0 };
+    for (const { show, keys } of showKeys) {
+      if (!inScope(keys)) continue;
+      bucket.count++;
+      bucket.spent += show.ticketPriceTWD || 0;
+    }
+    for (const { expense, keys } of expenseKeys) {
+      if (inScope(keys)) bucket.spent += expense.amountTWD;
+    }
+    totals.set(groupId, bucket);
+  }
+
+  return [...totals]
+    .filter(([, bucket]) => bucket.count > 0 || bucket.spent > 0)
+    .map(([key, total]) => ({
+      key,
+      name: index.byId.get(key)?.name ?? key.replace(/^raw:/, ''),
+      total,
+      direct: direct.get(key) || { count: 0, spent: 0 },
+      members: (membersByGroup.get(key) || [])
+        .map(id => ({ id, name: index.byId.get(id)?.name ?? id, bucket: direct.get(id) }))
+        .filter((m): m is { id: string; name: string; bucket: ArtistBucket } =>
+          !!m.bucket && (m.bucket.count > 0 || m.bucket.spent > 0)),
+    }))
+    .sort((a, b) => b.total.count - a.total.count || b.total.spent - a.total.spent);
+}
+
 /**
  * Backfills artistIds from the legacy artists strings, once per record. Also
  * self-heals records whose ids point at artists that went missing (an old

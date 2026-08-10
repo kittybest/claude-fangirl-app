@@ -1,15 +1,18 @@
 import { useState } from 'react';
-import { Show, Expense } from '../../types';
+import { Show, Expense, Artist } from '../../types';
 import { SHOW_CATEGORIES, showCategoryToExpenseCategory } from '../../utils/constants';
+import { aggregateByArtist, ArtistBucket } from '../../utils/artists';
 
 interface Props {
   shows: Show[];
   expenses: Expense[];
+  artists: Artist[];
 }
 
-export default function StatsView({ shows, expenses }: Props) {
+export default function StatsView({ shows, expenses, artists }: Props) {
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState<number | null>(null); // null = full year
+  const [expandedArtist, setExpandedArtist] = useState<string | null>(null);
 
   // Only count ticketed and cancelled for stats (not interested)
   const filteredShows = shows.filter(s => {
@@ -50,21 +53,7 @@ export default function StatsView({ shows, expenses }: Props) {
     byCategory[e.category] = (byCategory[e.category] || 0) + e.amountTWD;
   }
 
-  // By artist
-  const byArtist: Record<string, { count: number; spent: number }> = {};
-  for (const s of attendedShows) {
-    for (const a of s.artists) {
-      if (!byArtist[a]) byArtist[a] = { count: 0, spent: 0 };
-      byArtist[a].count++;
-      byArtist[a].spent += s.ticketPriceTWD || 0;
-    }
-  }
-  for (const e of filteredExpenses) {
-    for (const a of e.artists) {
-      if (!byArtist[a]) byArtist[a] = { count: 0, spent: 0 };
-      byArtist[a].spent += e.amountTWD;
-    }
-  }
+  const artistRows = aggregateByArtist(artists, attendedShows, filteredExpenses);
 
   // By show category
   const byShowCategory: Record<string, number> = {};
@@ -140,25 +129,65 @@ export default function StatsView({ shows, expenses }: Props) {
         )}
 
         {/* By artist */}
-        {Object.keys(byArtist).length > 0 && (
+        {artistRows.length > 0 && (
           <div className="bg-white rounded-xl p-4 shadow-sm">
             <h3 className="text-sm font-bold text-gray-700 mb-2">藝人/演出者</h3>
-            {Object.entries(byArtist).sort((a, b) => b[1].count - a[1].count).map(([name, data]) => (
-              <div key={name} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
-                <span className="text-sm text-gray-700">{name}</span>
-                <div className="text-right">
-                  <span className="text-xs text-purple-600 font-medium">{data.count}場</span>
-                  {data.spent > 0 && (
-                    <span className="text-[10px] text-gray-400 ml-2">NT${data.spent.toLocaleString()}</span>
+            {artistRows.map(row => {
+              const isOpen = expandedArtist === row.key;
+              return (
+                <div key={row.key} className="border-b border-gray-50 last:border-0">
+                  <div
+                    onClick={() => row.members.length > 0 && setExpandedArtist(isOpen ? null : row.key)}
+                    className={`flex items-center justify-between py-1.5 ${row.members.length > 0 ? 'cursor-pointer' : ''}`}>
+                    <span className="text-sm text-gray-700">
+                      {row.members.length > 0 && (
+                        <span className="text-[10px] text-gray-400 mr-1">{isOpen ? '▼' : '▶'}</span>
+                      )}
+                      {row.name}
+                    </span>
+                    <div className="text-right">
+                      <span className="text-xs text-purple-600 font-medium">{row.total.count}場</span>
+                      {row.total.spent > 0 && (
+                        <span className="text-[10px] text-gray-400 ml-2">NT${row.total.spent.toLocaleString()}</span>
+                      )}
+                    </div>
+                  </div>
+                  {isOpen && (
+                    <div className="pb-1.5 pl-4">
+                      <StatLine label="直接" bucket={row.direct} />
+                      {row.members.map(member => (
+                        <StatLine key={member.id} label={member.name} bucket={member.bucket} />
+                      ))}
+                    </div>
                   )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
+        )}
+
+        {artistRows.some(r => r.members.length > 0) && (
+          <p className="text-[10px] text-gray-400 text-center">
+            團體的數字含成員場次，同一場只算一次；成員那列只算標到本人的
+          </p>
         )}
 
         {filteredShows.length === 0 && filteredExpenses.length === 0 && (
           <p className="text-gray-400 text-sm text-center py-8">這段期間沒有資料</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function StatLine({ label, bucket }: { label: string; bucket: ArtistBucket }) {
+  return (
+    <div className="flex items-center justify-between py-0.5">
+      <span className="text-[11px] text-gray-500">{label}</span>
+      <div className="text-right">
+        <span className="text-[11px] text-gray-500">{bucket.count}場</span>
+        {bucket.spent > 0 && (
+          <span className="text-[10px] text-gray-400 ml-2">NT${bucket.spent.toLocaleString()}</span>
         )}
       </div>
     </div>

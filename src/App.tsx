@@ -89,7 +89,7 @@ export default function App() {
         />
       )}
       {tab === 'stats' && isAuthorized && (
-        <StatsView shows={data.shows} expenses={data.expenses} />
+        <StatsView shows={data.shows} expenses={data.expenses} artists={data.artists || []} />
       )}
       {tab === 'settings' && (
         <SettingsView
