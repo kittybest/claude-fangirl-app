@@ -54,6 +54,7 @@ export default function App() {
           schedules={data.schedules}
           allSeries={data.series || []}
           allArtists={data.artists || []}
+          allVenues={data.venues || []}
           isAuthorized={isAuthorized}
           onAddShow={(d) => { setShowFormDate(d); setShowForm(true); }}
           onAddSchedule={(d) => { setScheduleFormDate(d); setScheduleForm(true); }}
@@ -72,6 +73,7 @@ export default function App() {
           shows={data.shows}
           series={data.series || []}
           allArtists={data.artists || []}
+          allVenues={data.venues || []}
           isAuthorized={isAuthorized}
           onEditSeries={sr => setEditingSeries(sr)}
           onDeleteSeries={removeSeries}

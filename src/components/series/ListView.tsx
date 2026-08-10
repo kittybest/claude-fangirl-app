@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
-import { Show, Series, Artist } from '../../types';
+import { Show, Series, Artist, Venue } from '../../types';
 import { STATUS_CONFIG } from '../../utils/constants';
 import { buildArtistIndex, displayNames } from '../../utils/artists';
+import { buildVenueIndex, displayVenue, VenueIndex } from '../../utils/venues';
 
 type SubTab = 'series' | 'artists' | 'upcoming';
 
@@ -9,14 +10,16 @@ interface Props {
   shows: Show[];
   series: Series[];
   allArtists: Artist[];
+  allVenues: Venue[];
   isAuthorized: boolean;
   onEditSeries: (series: Series) => void;
   onDeleteSeries: (id: string) => void;
   expandSeriesId?: string | null;
 }
 
-export default function ListView({ shows, series, allArtists, isAuthorized, onEditSeries, onDeleteSeries, expandSeriesId }: Props) {
+export default function ListView({ shows, series, allArtists, allVenues, isAuthorized, onEditSeries, onDeleteSeries, expandSeriesId }: Props) {
   const artistIndex = useMemo(() => buildArtistIndex(allArtists), [allArtists]);
+  const venueIndex = useMemo(() => buildVenueIndex(allVenues), [allVenues]);
   const [subTab, setSubTab] = useState<SubTab>('series');
   const [expandedId, setExpandedId] = useState<string | null>(expandSeriesId ?? null);
 
@@ -85,7 +88,7 @@ export default function ListView({ shows, series, allArtists, isAuthorized, onEd
                     {isOpen && (
                       <div className="px-4 pb-3">
                         {srShows.sort((a, b) => a.date.localeCompare(b.date)).map(s => (
-                          <ShowRow key={s.id} show={s} />
+                          <ShowRow key={s.id} show={s} venueIndex={venueIndex} />
                         ))}
                         {isAuthorized && (
                           <div className="flex gap-2 mt-2">
@@ -124,7 +127,7 @@ export default function ListView({ shows, series, allArtists, isAuthorized, onEd
                     {isOpen && (
                       <div className="px-4 pb-3">
                         {artistShows.sort((a, b) => a.date.localeCompare(b.date)).map(s => (
-                          <ShowRow key={s.id} show={s} />
+                          <ShowRow key={s.id} show={s} venueIndex={venueIndex} />
                         ))}
                       </div>
                     )}
@@ -139,7 +142,7 @@ export default function ListView({ shows, series, allArtists, isAuthorized, onEd
           ) : (
             <div className="bg-white px-4 py-2">
               {upcomingShows.map(s => (
-                <ShowRow key={s.id} show={s} />
+                <ShowRow key={s.id} show={s} venueIndex={venueIndex} />
               ))}
             </div>
           )
@@ -150,13 +153,14 @@ export default function ListView({ shows, series, allArtists, isAuthorized, onEd
   );
 }
 
-function ShowRow({ show }: { show: Show }) {
+function ShowRow({ show, venueIndex }: { show: Show; venueIndex: VenueIndex }) {
+  const venue = displayVenue(venueIndex, show);
   return (
     <div className="flex items-center gap-2 py-1.5 border-b border-gray-50 last:border-0">
       <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${STATUS_CONFIG[show.status].dot}`} />
       <span className="text-xs text-gray-600 w-20 flex-shrink-0">{show.date}</span>
       <span className="text-xs text-gray-800 flex-1 truncate">{show.title}</span>
-      {show.venue && <span className="text-[10px] text-gray-400 flex-shrink-0">{show.venue}</span>}
+      {venue && <span className="text-[10px] text-gray-400 flex-shrink-0">{venue.name}</span>}
       <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${STATUS_CONFIG[show.status].color}`}>
         {STATUS_CONFIG[show.status].label}
       </span>

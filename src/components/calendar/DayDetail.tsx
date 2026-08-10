@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
-import { Show, Schedule, Series, Artist } from '../../types';
+import { Show, Schedule, Series, Artist, Venue } from '../../types';
 import { STATUS_CONFIG, SHOW_CATEGORIES, SCHEDULE_TYPES } from '../../utils/constants';
 import { weekdayZh } from '../../utils/date';
 import { buildArtistIndex, displayNames } from '../../utils/artists';
+import { buildVenueIndex, displayVenue } from '../../utils/venues';
 import StarRating from '../ui/StarRating';
 
 interface Props {
@@ -12,6 +13,7 @@ interface Props {
   allShows: Show[];
   allSeries: Series[];
   allArtists: Artist[];
+  allVenues: Venue[];
   isAuthorized: boolean;
   onGoToSeries: (seriesId: string) => void;
   onNavigateToDate: (date: string) => void;
@@ -25,8 +27,9 @@ interface Props {
   onDeleteSchedule: (id: string) => void;
 }
 
-export default function DayDetail({ date, shows, schedules, allShows, allSeries, allArtists, isAuthorized, onGoToSeries, onNavigateToDate, onEditShow, onDuplicateShow, onEditSchedule, onDuplicateSchedule, onDeleteShow, onDeleteSchedule }: Props) {
+export default function DayDetail({ date, shows, schedules, allShows, allSeries, allArtists, allVenues, isAuthorized, onGoToSeries, onNavigateToDate, onEditShow, onDuplicateShow, onEditSchedule, onDuplicateSchedule, onDeleteShow, onDeleteSchedule }: Props) {
   const artistIndex = useMemo(() => buildArtistIndex(allArtists), [allArtists]);
+  const venueIndex = useMemo(() => buildVenueIndex(allVenues), [allVenues]);
   const d = new Date(date + 'T00:00:00');
   const label = `${d.getMonth() + 1}/${d.getDate()} (${weekdayZh(d)})`;
 
@@ -77,11 +80,13 @@ export default function DayDetail({ date, shows, schedules, allShows, allSeries,
           })()}
           <div className="flex items-center gap-3 mt-1 text-[10px] text-gray-400 flex-wrap">
             {s.time && <span>{s.time}</span>}
-            {s.venue && (
-              s.venueUrl
-                ? <a href={s.venueUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline">{s.venue}</a>
-                : <span>{s.venue}</span>
-            )}
+            {(() => {
+              const venue = displayVenue(venueIndex, s);
+              if (!venue) return null;
+              return venue.url
+                ? <a href={venue.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline">{venue.name}</a>
+                : <span>{venue.name}</span>;
+            })()}
             {s.seat && <span>座位: {s.seat}</span>}
             {s.category && <span>{SHOW_CATEGORIES.find(c => c.value === s.category)?.label}</span>}
             {s.ticketPriceTWD != null && <span>NT${s.ticketPriceTWD.toLocaleString()}</span>}

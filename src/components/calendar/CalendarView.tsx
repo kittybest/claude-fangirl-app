@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Show, Schedule, Artist } from '../../types';
+import { Show, Schedule, Artist, Venue } from '../../types';
 import { getDaysInMonth, getFirstDayOfWeek, formatDate, parseDate } from '../../utils/date';
 import { STATUS_CONFIG } from '../../utils/constants';
 import DayDetail from './DayDetail';
@@ -19,10 +19,11 @@ interface Props {
   onDeleteSchedule: (id: string) => void;
   allSeries: import('../../types').Series[];
   allArtists: Artist[];
+  allVenues: Venue[];
   onGoToSeries: (seriesId: string) => void;
 }
 
-export default function CalendarView({ shows, schedules, isAuthorized, onAddShow, onAddSchedule, onAddSeries, onEditShow, onDuplicateShow, onEditSchedule, onDuplicateSchedule, onDeleteShow, onDeleteSchedule, allSeries, allArtists, onGoToSeries }: Props) {
+export default function CalendarView({ shows, schedules, isAuthorized, onAddShow, onAddSchedule, onAddSeries, onEditShow, onDuplicateShow, onEditSchedule, onDuplicateSchedule, onDeleteShow, onDeleteSchedule, allSeries, allArtists, allVenues, onGoToSeries }: Props) {
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
@@ -153,6 +154,7 @@ export default function CalendarView({ shows, schedules, isAuthorized, onAddShow
             allShows={shows}
             allSeries={allSeries}
             allArtists={allArtists}
+            allVenues={allVenues}
             isAuthorized={isAuthorized}
             onGoToSeries={onGoToSeries}
             onNavigateToDate={navigateToDate}
