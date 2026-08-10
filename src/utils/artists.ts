@@ -51,6 +51,24 @@ export function findArtist(index: ArtistIndex, name: string): Artist | undefined
   return key ? index.byKey.get(key) : undefined;
 }
 
+/** Autocomplete: matches against the display name and every alias. */
+export function searchArtists(artists: Artist[], query: string, limit = 8): Artist[] {
+  const key = normalizeName(query);
+  if (!key) return [];
+  const hits: { artist: Artist; score: number }[] = [];
+  for (const artist of artists) {
+    let best = 0;
+    for (const name of [artist.name, ...artist.aliases]) {
+      const candidate = normalizeName(name);
+      if (!candidate.includes(key)) continue;
+      best = Math.max(best, candidate === key ? 3 : candidate.startsWith(key) ? 2 : 1);
+    }
+    if (best > 0) hits.push({ artist, score: best });
+  }
+  hits.sort((a, b) => b.score - a.score || a.artist.name.localeCompare(b.artist.name));
+  return hits.slice(0, limit).map(hit => hit.artist);
+}
+
 function uniqueId(index: ArtistIndex, name: string): string {
   const base = artistIdFor(name);
   let id = base;

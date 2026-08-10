@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Expense, Show } from '../../types';
+import { Expense, Show, Artist } from '../../types';
 import { showCategoryToExpenseCategory } from '../../utils/constants';
 import ExpenseForm from './ExpenseForm';
 
 interface Props {
   expenses: Expense[];
   shows: Show[];
+  allArtists?: Artist[];
   isAuthorized: boolean;
   onAdd: (expense: Omit<Expense, 'id'>) => void;
   onUpdate: (id: string, updates: Partial<Omit<Expense, 'id'>>) => void;
@@ -24,7 +25,7 @@ interface DisplayExpense {
   isFromShow: boolean;
 }
 
-export default function ExpenseList({ expenses, shows, isAuthorized, onAdd, onUpdate, onDelete }: Props) {
+export default function ExpenseList({ expenses, shows, allArtists = [], isAuthorized, onAdd, onUpdate, onDelete }: Props) {
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filterMonth, setFilterMonth] = useState(() => {
@@ -141,6 +142,7 @@ export default function ExpenseList({ expenses, shows, isAuthorized, onAdd, onUp
 
       {adding && (
         <ExpenseForm
+          allArtists={allArtists}
           onSave={exp => { onAdd(exp); setAdding(false); }}
           onClose={() => setAdding(false)}
         />
@@ -148,6 +150,7 @@ export default function ExpenseList({ expenses, shows, isAuthorized, onAdd, onUp
       {editing && (
         <ExpenseForm
           initial={editing}
+          allArtists={allArtists}
           onSave={exp => { onUpdate(editing.id, exp); setEditingId(null); }}
           onClose={() => setEditingId(null)}
         />

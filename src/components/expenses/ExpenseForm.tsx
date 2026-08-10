@@ -1,19 +1,21 @@
 import { useState } from 'react';
-import { Expense, ExpenseCategory, Currency } from '../../types';
+import { Expense, ExpenseCategory, Currency, Artist } from '../../types';
 import { EXPENSE_CATEGORIES } from '../../utils/constants';
 import { CURRENCIES, convertToTWD } from '../../utils/currency';
+import ArtistInput from '../ui/ArtistInput';
 
 interface Props {
   initial?: Expense;
+  allArtists?: Artist[];
   onSave: (expense: Omit<Expense, 'id'>) => void;
   onClose: () => void;
 }
 
-export default function ExpenseForm({ initial, onSave, onClose }: Props) {
+export default function ExpenseForm({ initial, allArtists = [], onSave, onClose }: Props) {
   const [description, setDescription] = useState(initial?.description ?? '');
   const [date, setDate] = useState(initial?.date ?? new Date().toISOString().slice(0, 10));
   const [category, setCategory] = useState<ExpenseCategory>(initial?.category ?? '門票');
-  const [artists, setArtists] = useState(initial?.artists.join(', ') ?? '');
+  const [artists, setArtists] = useState<string[]>(initial?.artists ?? []);
   const [amount, setAmount] = useState(initial?.amount.toString() ?? '');
   const [currency, setCurrency] = useState<Currency>(initial?.currency ?? 'TWD');
   const [amountTWD, setAmountTWD] = useState(initial?.amountTWD?.toString() ?? '');
@@ -25,7 +27,7 @@ export default function ExpenseForm({ initial, onSave, onClose }: Props) {
     if (!description || !amount) return;
     onSave({
       description, date, category,
-      artists: artists ? artists.split(',').map(a => a.trim()).filter(Boolean) : [],
+      artists,
       amount: parseFloat(amount),
       currency,
       amountTWD: amountTWD ? parseInt(amountTWD) : autoTWD,
@@ -55,8 +57,7 @@ export default function ExpenseForm({ initial, onSave, onClose }: Props) {
               </button>
             ))}
           </div>
-          <input value={artists} onChange={e => setArtists(e.target.value)} placeholder="對象/藝人 (逗號分隔，選填)"
-            className="w-full border rounded-lg px-3 py-2 text-sm" />
+          <ArtistInput value={artists} artists={allArtists} onChange={setArtists} placeholder="對象/藝人 (選填)" />
           <div className="flex gap-2">
             <input type="number" step="0.01" value={amount} onChange={e => setAmount(e.target.value)}
               placeholder="金額 *" required className="flex-1 border rounded-lg px-3 py-2 text-sm" />

@@ -1,19 +1,21 @@
 import { useState } from 'react';
-import { Show, ShowLink, ShowStatus, ShowCategory, Currency, Series } from '../../types';
+import { Show, ShowLink, ShowStatus, ShowCategory, Currency, Series, Artist } from '../../types';
 import { SHOW_CATEGORIES, STATUS_CONFIG, TIMEZONES } from '../../utils/constants';
 import { CURRENCIES, convertToTWD } from '../../utils/currency';
 import StarRating from '../ui/StarRating';
+import ArtistInput from '../ui/ArtistInput';
 
 interface Props {
   initial?: Show;
   isEdit?: boolean;
   defaultDate?: string;
   allSeries?: Series[];
+  allArtists?: Artist[];
   onSave: (show: Omit<Show, 'id'>) => void;
   onClose: () => void;
 }
 
-export default function ShowForm({ initial, isEdit, defaultDate, allSeries = [], onSave, onClose }: Props) {
+export default function ShowForm({ initial, isEdit, defaultDate, allSeries = [], allArtists = [], onSave, onClose }: Props) {
   const [title, setTitle] = useState(initial?.title ?? '');
   const [date, setDate] = useState(initial?.date ?? defaultDate ?? new Date().toISOString().slice(0, 10));
   const [time, setTime] = useState(initial?.time ?? '18:00');
@@ -25,7 +27,7 @@ export default function ShowForm({ initial, isEdit, defaultDate, allSeries = [],
     ? allSeries.filter(s => s.title.toLowerCase().includes(seriesSearch.toLowerCase())).slice(0, 8)
     : [];
   const [timezone, setTimezone] = useState(initial?.timezone ?? 'Asia/Taipei');
-  const [artists, setArtists] = useState(initial?.artists.join(', ') ?? '');
+  const [artists, setArtists] = useState<string[]>(initial?.artists ?? []);
   const [venue, setVenue] = useState(initial?.venue ?? '');
   const [venueUrl, setVenueUrl] = useState(initial?.venueUrl ?? '');
   const [seat, setSeat] = useState(initial?.seat ?? '');
@@ -61,7 +63,7 @@ export default function ShowForm({ initial, isEdit, defaultDate, allSeries = [],
       title, date,
       time: time || undefined,
       timezone: time ? timezone : undefined,
-      artists: artists ? artists.split(',').map(a => a.trim()).filter(Boolean) : [],
+      artists,
       venue: venue || undefined,
       venueUrl: venueUrl || undefined,
       seat: seat || undefined,
@@ -100,8 +102,7 @@ export default function ShowForm({ initial, isEdit, defaultDate, allSeries = [],
               {TIMEZONES.map(tz => <option key={tz.value} value={tz.value}>{tz.label}</option>)}
             </select>
           </div>
-          <input value={artists} onChange={e => setArtists(e.target.value)} placeholder="演出者 (逗號分隔)"
-            className="w-full border rounded-lg px-3 py-2 text-sm" />
+          <ArtistInput value={artists} artists={allArtists} onChange={setArtists} placeholder="演出者" />
           <input value={venue} onChange={e => setVenue(e.target.value)} placeholder="地點"
             className="w-full border rounded-lg px-3 py-2 text-sm" />
           <input value={venueUrl} onChange={e => setVenueUrl(e.target.value)} placeholder="地點連結 (選填)"

@@ -77,6 +77,7 @@ export default function App() {
         <ExpenseList
           expenses={data.expenses}
           shows={data.shows}
+          allArtists={data.artists || []}
           isAuthorized={isAuthorized}
           onAdd={addExpense}
           onUpdate={updateExpense}
@@ -94,6 +95,7 @@ export default function App() {
             series: editingSeries,
             shows: data.shows.filter(s => editingSeries.showIds.includes(s.id)),
           } : undefined}
+          allArtists={data.artists || []}
           onSave={(title, artists, items) => {
             if (editingSeries) {
               updateSeries(editingSeries.id, title, artists, items);
@@ -131,6 +133,7 @@ export default function App() {
           isEdit={!!editingShow}
           defaultDate={showFormDate}
           allSeries={data.series || []}
+          allArtists={data.artists || []}
           onSave={show => {
             if (editingShow) updateShow(editingShow.id, show);
             else addShow(show);

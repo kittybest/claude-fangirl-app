@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Series, Show } from '../../types';
+import { Series, Show, Artist } from '../../types';
+import ArtistInput from '../ui/ArtistInput';
 
 interface SeriesItem {
   id?: string; // existing show id, undefined for new
@@ -9,15 +10,14 @@ interface SeriesItem {
 
 interface Props {
   initial?: { series: Series; shows: Show[] };
+  allArtists?: Artist[];
   onSave: (title: string, artists: string[], items: SeriesItem[]) => void;
   onClose: () => void;
 }
 
-export default function SeriesForm({ initial, onSave, onClose }: Props) {
+export default function SeriesForm({ initial, allArtists = [], onSave, onClose }: Props) {
   const [title, setTitle] = useState(initial?.series.title ?? '');
-  const [artists, setArtists] = useState(
-    initial?.shows[0]?.artists.join(', ') ?? ''
-  );
+  const [artists, setArtists] = useState<string[]>(initial?.shows[0]?.artists ?? []);
   const [items, setItems] = useState<SeriesItem[]>(
     initial
       ? initial.series.showIds
@@ -44,11 +44,7 @@ export default function SeriesForm({ initial, onSave, onClose }: Props) {
     e.preventDefault();
     const validItems = items.filter(item => item.date);
     if (!title || validItems.length === 0) return;
-    onSave(
-      title,
-      artists ? artists.split(',').map(a => a.trim()).filter(Boolean) : [],
-      validItems,
-    );
+    onSave(title, artists, validItems);
   };
 
   return (
@@ -61,8 +57,7 @@ export default function SeriesForm({ initial, onSave, onClose }: Props) {
         <form onSubmit={handleSubmit} className="space-y-2.5 overflow-y-auto flex-1 pb-2">
           <input value={title} onChange={e => setTitle(e.target.value)} placeholder="系列名稱 * (e.g. ATEEZ World Tour)"
             required className="w-full border rounded-lg px-3 py-2 text-sm" />
-          <input value={artists} onChange={e => setArtists(e.target.value)} placeholder="演出者 (逗號分隔，選填)"
-            className="w-full border rounded-lg px-3 py-2 text-sm" />
+          <ArtistInput value={artists} artists={allArtists} onChange={setArtists} placeholder="演出者 (選填)" />
 
           <div className="border-t pt-2">
             <div className="flex items-center justify-between mb-2">
