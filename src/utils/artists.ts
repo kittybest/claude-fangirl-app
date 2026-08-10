@@ -77,6 +77,20 @@ function uniqueId(index: ArtistIndex, name: string): string {
   return id;
 }
 
+/**
+ * Builds an artist that doesn't exist yet, for the cases where you register one
+ * deliberately instead of it falling out of a show or expense. Marked reviewed
+ * because it was created on purpose — the unreviewed list is the migration to-do.
+ */
+export function newArtist(artists: Artist[], name: string): Artist {
+  return {
+    id: uniqueId(buildArtistIndex(artists), name),
+    name: name.trim(),
+    aliases: [],
+    reviewed: true,
+  };
+}
+
 /** Mutates `list` and `index` — callers own a copy of both. */
 function resolveOne(list: Artist[], index: ArtistIndex, name: string): Artist | undefined {
   const key = normalizeName(name);

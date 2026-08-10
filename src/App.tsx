@@ -22,7 +22,7 @@ export default function App() {
     addSchedule, updateSchedule, removeSchedule,
     addExpense, updateExpense, removeExpense,
     addSeries, updateSeries, removeSeries,
-    updateArtist, mergeArtists, removeArtist,
+    addArtist, updateArtist, mergeArtists, removeArtist,
   } = useAppData();
   const { isAuthorized, login, logout } = useAuth();
 
@@ -97,6 +97,7 @@ export default function App() {
           isAuthorized={isAuthorized}
           onLoginClick={() => setLoginModal(true)}
           onLogout={logout}
+          onCreateArtist={addArtist}
           onUpdateArtist={updateArtist}
           onMergeArtists={mergeArtists}
           onRemoveArtist={removeArtist}

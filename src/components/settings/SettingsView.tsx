@@ -7,6 +7,7 @@ interface Props {
   isAuthorized: boolean;
   onLoginClick: () => void;
   onLogout: () => void;
+  onCreateArtist: (artist: Artist) => void;
   onUpdateArtist: (id: string, updates: Partial<Omit<Artist, 'id'>>) => void;
   onMergeArtists: (fromId: string, intoId: string) => void;
   onRemoveArtist: (id: string) => void;
@@ -25,7 +26,7 @@ function download(content: unknown, filename: string) {
 
 export default function SettingsView({
   data, isAuthorized, onLoginClick, onLogout,
-  onUpdateArtist, onMergeArtists, onRemoveArtist,
+  onCreateArtist, onUpdateArtist, onMergeArtists, onRemoveArtist,
 }: Props) {
   const [managingArtists, setManagingArtists] = useState(false);
 
@@ -109,6 +110,7 @@ export default function SettingsView({
       {managingArtists && (
         <ArtistManager
           data={data}
+          onCreate={onCreateArtist}
           onUpdate={onUpdateArtist}
           onMerge={onMergeArtists}
           onRemove={onRemoveArtist}

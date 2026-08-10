@@ -1,16 +1,17 @@
 import { useMemo, useState } from 'react';
 import { AppData, Artist } from '../../types';
-import { artistUsage, buildArtistIndex, membersOf, normalizeName, searchArtists } from '../../utils/artists';
+import { artistUsage, buildArtistIndex, findArtist, membersOf, newArtist, normalizeName, searchArtists } from '../../utils/artists';
 
 interface Props {
   data: AppData;
+  onCreate: (artist: Artist) => void;
   onUpdate: (id: string, updates: Partial<Omit<Artist, 'id'>>) => void;
   onMerge: (fromId: string, intoId: string) => void;
   onRemove: (id: string) => void;
   onClose: () => void;
 }
 
-export default function ArtistManager({ data, onUpdate, onMerge, onRemove, onClose }: Props) {
+export default function ArtistManager({ data, onCreate, onUpdate, onMerge, onRemove, onClose }: Props) {
   const [query, setQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -34,63 +35,66 @@ export default function ArtistManager({ data, onUpdate, onMerge, onRemove, onClo
   }, [data.artists, query, totals]);
 
   return (
-    <div className="fixed inset-0 bg-gray-50 z-50 flex flex-col">
-      <div className="bg-white border-b px-4 py-3 flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <button onClick={onClose} className="text-gray-400 text-sm">‹ 返回</button>
-          <h2 className="text-base font-bold flex-1">藝人</h2>
+    <div className="fixed inset-0 bg-black/40 z-50 flex justify-center">
+      <div className="bg-gray-50 w-full max-w-lg flex flex-col">
+        <div className="bg-white border-b px-4 py-3 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <button onClick={onClose} className="text-gray-400 text-sm">‹ 返回</button>
+            <h2 className="text-base font-bold flex-1">藝人</h2>
+          </div>
+          <p className="text-[10px] text-gray-400 mt-1">
+            共 {data.artists.length} 位
+            {unreviewed > 0 && <span className="text-amber-600"> · {unreviewed} 位待整理</span>}
+          </p>
+          <input value={query} onChange={e => setQuery(e.target.value)} placeholder="搜尋名稱或別名"
+            className="w-full border rounded-lg px-3 py-1.5 text-sm mt-2" />
         </div>
-        <p className="text-[10px] text-gray-400 mt-1">
-          共 {data.artists.length} 位
-          {unreviewed > 0 && <span className="text-amber-600"> · {unreviewed} 位待整理</span>}
-        </p>
-        <input value={query} onChange={e => setQuery(e.target.value)} placeholder="搜尋名稱或別名"
-          className="w-full border rounded-lg px-3 py-1.5 text-sm mt-2" />
-      </div>
 
-      <div className="flex-1 overflow-y-auto divide-y pb-16"> {/* clears the bottom nav */}
-        {sorted.length === 0 ? (
-          <p className="text-gray-400 text-xs text-center py-8">沒有符合的藝人</p>
-        ) : sorted.map(artist => {
-          const members = membersOf(data.artists, artist.id);
-          const groups = (artist.groupIds || [])
-            .map(id => data.artists.find(a => a.id === id))
-            .filter((a): a is Artist => !!a);
-          return (
-            <div key={artist.id} className={`bg-white ${artist.reviewed ? '' : 'border-l-2 border-amber-300'}`}>
-              <button onClick={() => setEditingId(editingId === artist.id ? null : artist.id)}
-                className="w-full px-4 py-2.5 text-left flex items-center gap-2">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-800 truncate">
-                    {artist.name}
-                    {groups.length > 0 && (
-                      <span className="text-[10px] text-purple-500 ml-1.5">＠{groups.map(g => g.name).join(' / ')}</span>
+        <div className="flex-1 overflow-y-auto divide-y pb-16"> {/* clears the bottom nav */}
+          {sorted.length === 0 ? (
+            <p className="text-gray-400 text-xs text-center py-8">沒有符合的藝人</p>
+          ) : sorted.map(artist => {
+            const members = membersOf(data.artists, artist.id);
+            const groups = (artist.groupIds || [])
+              .map(id => data.artists.find(a => a.id === id))
+              .filter((a): a is Artist => !!a);
+            return (
+              <div key={artist.id} className={`bg-white ${artist.reviewed ? '' : 'border-l-2 border-amber-300'}`}>
+                <button onClick={() => setEditingId(editingId === artist.id ? null : artist.id)}
+                  className="w-full px-4 py-2.5 text-left flex items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-800 truncate">
+                      {artist.name}
+                      {groups.length > 0 && (
+                        <span className="text-[10px] text-purple-500 ml-1.5">＠{groups.map(g => g.name).join(' / ')}</span>
+                      )}
+                    </p>
+                    {artist.aliases.length > 0 && (
+                      <p className="text-[10px] text-gray-400 truncate">{artist.aliases.join(' / ')}</p>
                     )}
-                  </p>
-                  {artist.aliases.length > 0 && (
-                    <p className="text-[10px] text-gray-400 truncate">{artist.aliases.join(' / ')}</p>
-                  )}
-                </div>
-                <span className="text-[10px] text-gray-400 flex-shrink-0">
-                  {count(artist.id)} 筆
-                  {members.length > 0 && ` · ${members.length} 成員`}
-                </span>
-              </button>
-              {editingId === artist.id && (
-                <ArtistEditor
-                  key={artist.id}
-                  artist={artist}
-                  artists={data.artists}
-                  usageCount={count(artist.id)}
-                  onSave={updates => { onUpdate(artist.id, updates); setEditingId(null); }}
-                  onMerge={intoId => { onMerge(artist.id, intoId); setEditingId(null); }}
-                  onRemove={() => { onRemove(artist.id); setEditingId(null); }}
-                  onCancel={() => setEditingId(null)}
-                />
-              )}
-            </div>
-          );
-        })}
+                  </div>
+                  <span className="text-[10px] text-gray-400 flex-shrink-0">
+                    {count(artist.id)} 筆
+                    {members.length > 0 && ` · ${members.length} 成員`}
+                  </span>
+                </button>
+                {editingId === artist.id && (
+                  <ArtistEditor
+                    key={artist.id}
+                    artist={artist}
+                    artists={data.artists}
+                    usageCount={count(artist.id)}
+                    onCreate={onCreate}
+                    onSave={updates => { onUpdate(artist.id, updates); setEditingId(null); }}
+                    onMerge={intoId => { onMerge(artist.id, intoId); setEditingId(null); }}
+                    onRemove={() => { onRemove(artist.id); setEditingId(null); }}
+                    onCancel={() => setEditingId(null)}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -100,13 +104,14 @@ interface EditorProps {
   artist: Artist;
   artists: Artist[];
   usageCount: number;
+  onCreate: (artist: Artist) => void;
   onSave: (updates: Partial<Omit<Artist, 'id'>>) => void;
   onMerge: (intoId: string) => void;
   onRemove: () => void;
   onCancel: () => void;
 }
 
-function ArtistEditor({ artist, artists, usageCount, onSave, onMerge, onRemove, onCancel }: EditorProps) {
+function ArtistEditor({ artist, artists, usageCount, onCreate, onSave, onMerge, onRemove, onCancel }: EditorProps) {
   const [name, setName] = useState(artist.name);
   const [aliases, setAliases] = useState<string[]>(artist.aliases);
   const [groupIds, setGroupIds] = useState<string[]>(artist.groupIds || []);
@@ -141,6 +146,19 @@ function ArtistEditor({ artist, artists, usageCount, onSave, onMerge, onRemove, 
       return;
     }
     onSave({ name: trimmed, aliases, groupIds, reviewed: true });
+  };
+
+  // A group you haven't logged any show for yet won't exist as an artist, so
+  // allow creating it here instead of forcing a dummy show first.
+  const pickGroup = (name: string) => {
+    const existing = findArtist(buildArtistIndex(artists), name);
+    if (existing?.id === artist.id) {
+      alert('不能把自己設為自己的團體。');
+      return;
+    }
+    const group = existing ?? newArtist(artists, name);
+    if (!existing) onCreate(group);
+    if (!groupIds.includes(group.id)) setGroupIds([...groupIds, group.id]);
   };
 
   const remove = () => {
@@ -202,8 +220,9 @@ function ArtistEditor({ artist, artists, usageCount, onSave, onMerge, onRemove, 
             ) : null;
           })}
         </div>
-        <ArtistSelect artists={others} exclude={[...groupIds, ...memberIds]} placeholder="搜尋團體"
-          onPick={group => setGroupIds([...groupIds, group.id])} />
+        <ArtistSelect artists={others} exclude={[...groupIds, ...memberIds]} placeholder="搜尋或新增團體"
+          onPick={group => pickGroup(group.name)}
+          createLabel="新增並設為團體" onCreate={pickGroup} />
       </div>
 
       <div className="flex gap-2 pt-1">
@@ -226,22 +245,26 @@ function ArtistEditor({ artist, artists, usageCount, onSave, onMerge, onRemove, 
   );
 }
 
-function ArtistSelect({ artists, exclude, placeholder, onPick }: {
+function ArtistSelect({ artists, exclude, placeholder, onPick, createLabel, onCreate }: {
   artists: Artist[];
   exclude: string[];
   placeholder: string;
   onPick: (artist: Artist) => void;
+  createLabel?: string;
+  onCreate?: (name: string) => void;
 }) {
   const [query, setQuery] = useState('');
+  const index = useMemo(() => buildArtistIndex(artists), [artists]);
   const matches = query.trim()
     ? searchArtists(artists, query, 6).filter(a => !exclude.includes(a.id))
     : [];
+  const canCreate = !!onCreate && !!query.trim() && !findArtist(index, query);
 
   return (
     <div className="relative">
       <input value={query} onChange={e => setQuery(e.target.value)} placeholder={placeholder}
         className="w-full border rounded-lg px-2 py-1.5 text-xs" />
-      {matches.length > 0 && (
+      {(matches.length > 0 || canCreate) && (
         <ul className="absolute z-10 w-full bg-white border rounded-lg mt-1 shadow-lg max-h-40 overflow-y-auto">
           {matches.map(a => (
             <li key={a.id}
@@ -254,6 +277,13 @@ function ArtistSelect({ artists, exclude, placeholder, onPick }: {
               )}
             </li>
           ))}
+          {canCreate && (
+            <li onMouseDown={e => e.preventDefault()}
+              onClick={() => { const name = query.trim(); setQuery(''); onCreate!(name); }}
+              className="px-3 py-2 text-xs text-blue-500 hover:bg-blue-50 cursor-pointer border-t border-gray-100">
+              {createLabel}「{query.trim()}」
+            </li>
+          )}
         </ul>
       )}
     </div>

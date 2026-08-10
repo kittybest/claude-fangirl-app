@@ -317,6 +317,10 @@ export function useAppData() {
   }, [setData]);
 
   // Artists
+  const addArtist = useCallback((artist: Artist) => {
+    setData(d => d.artists.some(a => a.id === artist.id) ? d : { ...d, artists: [...d.artists, artist] });
+  }, [setData]);
+
   const updateArtist = useCallback((id: string, updates: Partial<Omit<Artist, 'id'>>) => {
     setData(d => ({
       ...d,
@@ -343,6 +347,6 @@ export function useAppData() {
     addSchedule, updateSchedule, removeSchedule,
     addExpense, updateExpense, removeExpense,
     addSeries, updateSeries, removeSeries,
-    updateArtist, mergeArtists, removeArtist,
+    addArtist, updateArtist, mergeArtists, removeArtist,
   };
 }
