@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { Series, Show, Artist } from '../../types';
+import { Series, Show, Artist, Venue } from '../../types';
 import { buildArtistIndex, displayNames } from '../../utils/artists';
+import { buildVenueIndex, displayVenue } from '../../utils/venues';
 import ArtistInput from '../ui/ArtistInput';
+import VenueInput from '../ui/VenueInput';
 
 interface SeriesItem {
   id?: string; // existing show id, undefined for new
@@ -12,11 +14,12 @@ interface SeriesItem {
 interface Props {
   initial?: { series: Series; shows: Show[] };
   allArtists?: Artist[];
+  allVenues?: Venue[];
   onSave: (title: string, artists: string[], items: SeriesItem[]) => void;
   onClose: () => void;
 }
 
-export default function SeriesForm({ initial, allArtists = [], onSave, onClose }: Props) {
+export default function SeriesForm({ initial, allArtists = [], allVenues = [], onSave, onClose }: Props) {
   const [title, setTitle] = useState(initial?.series.title ?? '');
   const [artists, setArtists] = useState<string[]>(() => {
     const first = initial?.shows[0];
@@ -27,7 +30,11 @@ export default function SeriesForm({ initial, allArtists = [], onSave, onClose }
       ? initial.series.showIds
           .map(id => initial.shows.find(s => s.id === id))
           .filter(Boolean)
-          .map(s => ({ id: s!.id, date: s!.date, venue: s!.venue || '' }))
+          .map(s => ({
+            id: s!.id,
+            date: s!.date,
+            venue: displayVenue(buildVenueIndex(allVenues), s!)?.name || '',
+          }))
       : [{ date: '', venue: '' }]
   );
 
@@ -73,8 +80,11 @@ export default function SeriesForm({ initial, allArtists = [], onSave, onClose }
               <div key={i} className="flex gap-1.5 mb-2 items-center">
                 <input type="date" value={item.date} onChange={e => updateItem(i, 'date', e.target.value)}
                   required className="flex-1 border rounded-lg px-2 py-1.5 text-xs" />
-                <input value={item.venue} onChange={e => updateItem(i, 'venue', e.target.value)}
-                  placeholder="地點" className="flex-1 border rounded-lg px-2 py-1.5 text-xs" />
+                <div className="flex-1">
+                  <VenueInput value={item.venue} venues={allVenues}
+                    onChange={value => updateItem(i, 'venue', value)}
+                    placeholder="地點" className="w-full border rounded-lg px-2 py-1.5 text-xs" />
+                </div>
                 {items.length > 1 && (
                   <button type="button" onClick={() => removeItem(i)}
                     className="text-red-400 text-xs px-1">✕</button>

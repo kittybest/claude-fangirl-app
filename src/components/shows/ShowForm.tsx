@@ -1,10 +1,12 @@
-import { useState } from 'react';
-import { Show, ShowLink, ShowStatus, ShowCategory, Currency, Series, Artist } from '../../types';
+import { useMemo, useState } from 'react';
+import { Show, ShowLink, ShowStatus, ShowCategory, Currency, Series, Artist, Venue } from '../../types';
 import { SHOW_CATEGORIES, STATUS_CONFIG, TIMEZONES } from '../../utils/constants';
 import { CURRENCIES, convertToTWD } from '../../utils/currency';
 import { buildArtistIndex, displayNames } from '../../utils/artists';
+import { buildVenueIndex, displayVenue } from '../../utils/venues';
 import StarRating from '../ui/StarRating';
 import ArtistInput from '../ui/ArtistInput';
+import VenueInput from '../ui/VenueInput';
 
 interface Props {
   initial?: Show;
@@ -12,11 +14,14 @@ interface Props {
   defaultDate?: string;
   allSeries?: Series[];
   allArtists?: Artist[];
+  allVenues?: Venue[];
   onSave: (show: Omit<Show, 'id'>) => void;
   onClose: () => void;
 }
 
-export default function ShowForm({ initial, isEdit, defaultDate, allSeries = [], allArtists = [], onSave, onClose }: Props) {
+export default function ShowForm({ initial, isEdit, defaultDate, allSeries = [], allArtists = [], allVenues = [], onSave, onClose }: Props) {
+  const venueIndex = useMemo(() => buildVenueIndex(allVenues), [allVenues]);
+  const initialVenue = initial ? displayVenue(venueIndex, initial) : undefined;
   const [title, setTitle] = useState(initial?.title ?? '');
   const [date, setDate] = useState(initial?.date ?? defaultDate ?? new Date().toISOString().slice(0, 10));
   const [time, setTime] = useState(initial?.time ?? '18:00');
@@ -31,8 +36,8 @@ export default function ShowForm({ initial, isEdit, defaultDate, allSeries = [],
   const [artists, setArtists] = useState<string[]>(
     () => initial ? displayNames(buildArtistIndex(allArtists), initial) : []
   );
-  const [venue, setVenue] = useState(initial?.venue ?? '');
-  const [venueUrl, setVenueUrl] = useState(initial?.venueUrl ?? '');
+  const [venue, setVenue] = useState(initialVenue?.name ?? '');
+  const [venueUrl, setVenueUrl] = useState(initialVenue?.url ?? initial?.venueUrl ?? '');
   const [seat, setSeat] = useState(initial?.seat ?? '');
   const [category, setCategory] = useState<ShowCategory | ''>(initial?.category ?? '');
   const [links, setLinks] = useState<ShowLink[]>(initial?.links ?? []);
@@ -106,10 +111,15 @@ export default function ShowForm({ initial, isEdit, defaultDate, allSeries = [],
             </select>
           </div>
           <ArtistInput value={artists} artists={allArtists} onChange={setArtists} placeholder="演出者" />
-          <input value={venue} onChange={e => setVenue(e.target.value)} placeholder="地點"
-            className="w-full border rounded-lg px-3 py-2 text-sm" />
-          <input value={venueUrl} onChange={e => setVenueUrl(e.target.value)} placeholder="地點連結 (選填)"
-            className="w-full border rounded-lg px-3 py-2 text-sm" />
+          <VenueInput value={venue} venues={allVenues} onChange={setVenue}
+            onSelect={v => setVenueUrl(v.url ?? '')} placeholder="地點" />
+          <div>
+            <input value={venueUrl} onChange={e => setVenueUrl(e.target.value)} placeholder="地點連結 (選填)"
+              className="w-full border rounded-lg px-3 py-2 text-sm" />
+            {venue.trim() && (
+              <p className="text-[10px] text-gray-400 mt-0.5">連結屬於場地，修改會影響所有同場地演出；留空不會清除既有連結</p>
+            )}
+          </div>
           <input value={seat} onChange={e => setSeat(e.target.value)} placeholder="座位 (選填)"
             className="w-full border rounded-lg px-3 py-2 text-sm" />
           <select value={category} onChange={e => setCategory(e.target.value as ShowCategory | '')}

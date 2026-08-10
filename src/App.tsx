@@ -112,6 +112,7 @@ export default function App() {
             shows: data.shows.filter(s => editingSeries.showIds.includes(s.id)),
           } : undefined}
           allArtists={data.artists || []}
+          allVenues={data.venues || []}
           onSave={(title, artists, items) => {
             if (editingSeries) {
               updateSeries(editingSeries.id, title, artists, items);
@@ -149,6 +150,7 @@ export default function App() {
           defaultDate={showFormDate}
           allSeries={data.series || []}
           allArtists={data.artists || []}
+          allVenues={data.venues || []}
           onSave={show => {
             if (editingShow) updateShow(editingShow.id, show);
             else addShow(show);
