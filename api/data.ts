@@ -18,7 +18,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'GET') {
     try {
       const data = await redis.get(DATA_KEY);
-      if (!data) return res.status(200).json({ shows: [], schedules: [], expenses: [], series: [] });
+      if (!data) return res.status(200).json({ shows: [], schedules: [], expenses: [], series: [], artists: [] });
       const parsed = typeof data === 'string' ? JSON.parse(data) : data;
       return res.status(200).json(parsed);
     } catch (err) {
@@ -29,8 +29,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method === 'PUT') {
     try {
-      const { shows, schedules, expenses, series } = req.body;
-      await redis.set(DATA_KEY, JSON.stringify({ shows, schedules, expenses, series: series || [] }));
+      // Spread the body so fields added later are never silently dropped here.
+      const body = req.body || {};
+      await redis.set(DATA_KEY, JSON.stringify({
+        ...body,
+        shows: body.shows || [],
+        schedules: body.schedules || [],
+        expenses: body.expenses || [],
+        series: body.series || [],
+        artists: body.artists || [],
+      }));
       return res.status(200).json({ ok: true });
     } catch (err) {
       console.error('Failed to save data:', err);
