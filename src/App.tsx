@@ -23,6 +23,7 @@ export default function App() {
     addExpense, updateExpense, removeExpense,
     addSeries, updateSeries, removeSeries,
     addArtist, updateArtist, mergeArtists, removeArtist,
+    updateVenue, mergeVenues, removeVenue,
   } = useAppData();
   const { isAuthorized, login, logout } = useAuth();
 
@@ -101,6 +102,9 @@ export default function App() {
           onUpdateArtist={updateArtist}
           onMergeArtists={mergeArtists}
           onRemoveArtist={removeArtist}
+          onUpdateVenue={updateVenue}
+          onMergeVenues={mergeVenues}
+          onRemoveVenue={removeVenue}
         />
       )}
 

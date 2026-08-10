@@ -16,16 +16,6 @@ export const findVenue = (index: VenueIndex, name: string) => findEntity(index, 
 export const searchVenues = (venues: Venue[], query: string, limit = 8) =>
   searchEntities(venues, query, limit);
 
-/** Created deliberately in the manager, so it starts out tidied. */
-export function newVenue(venues: Venue[], name: string): Venue {
-  return {
-    id: uniqueEntityId(buildVenueIndex(venues), PREFIX, name),
-    name: name.trim(),
-    aliases: [],
-    reviewed: true,
-  };
-}
-
 /** Ids are the source of truth; the raw string is only a fallback for old records. */
 export function displayVenue(index: VenueIndex, show: { venue?: string; venueId?: string }): Venue | { name: string; url?: string } | undefined {
   if (show.venueId) {

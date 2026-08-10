@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { AppData, Artist } from '../../types';
+import { AppData, Artist, Venue } from '../../types';
 import ArtistManager from './ArtistManager';
+import VenueManager from './VenueManager';
 
 interface Props {
   data: AppData;
@@ -11,6 +12,9 @@ interface Props {
   onUpdateArtist: (id: string, updates: Partial<Omit<Artist, 'id'>>) => void;
   onMergeArtists: (fromId: string, intoId: string) => void;
   onRemoveArtist: (id: string) => void;
+  onUpdateVenue: (id: string, updates: Partial<Omit<Venue, 'id'>>) => void;
+  onMergeVenues: (fromId: string, intoId: string) => void;
+  onRemoveVenue: (id: string) => void;
 }
 
 function download(content: unknown, filename: string) {
@@ -27,11 +31,14 @@ function download(content: unknown, filename: string) {
 export default function SettingsView({
   data, isAuthorized, onLoginClick, onLogout,
   onCreateArtist, onUpdateArtist, onMergeArtists, onRemoveArtist,
+  onUpdateVenue, onMergeVenues, onRemoveVenue,
 }: Props) {
   const [managingArtists, setManagingArtists] = useState(false);
+  const [managingVenues, setManagingVenues] = useState(false);
 
   const today = new Date().toLocaleDateString('sv-SE');
   const unreviewed = data.artists.filter(a => !a.reviewed).length;
+  const unreviewedVenues = data.venues.filter(v => !v.reviewed).length;
 
   const downloadBackup = async () => {
     try {
@@ -72,7 +79,7 @@ export default function SettingsView({
 
         {isAuthorized && (
           <>
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden divide-y">
               <button onClick={() => setManagingArtists(true)}
                 className="w-full px-4 py-3 flex items-center gap-2 text-left">
                 <div className="flex-1">
@@ -82,6 +89,19 @@ export default function SettingsView({
                 {unreviewed > 0 && (
                   <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
                     {unreviewed} 待整理
+                  </span>
+                )}
+                <span className="text-gray-300">›</span>
+              </button>
+              <button onClick={() => setManagingVenues(true)}
+                className="w-full px-4 py-3 flex items-center gap-2 text-left">
+                <div className="flex-1">
+                  <p className="text-sm text-gray-800">場地管理</p>
+                  <p className="text-[10px] text-gray-400">合併重複、設定別名、城市與連結</p>
+                </div>
+                {unreviewedVenues > 0 && (
+                  <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                    {unreviewedVenues} 待整理
                   </span>
                 )}
                 <span className="text-gray-300">›</span>
@@ -101,7 +121,8 @@ export default function SettingsView({
             </div>
 
             <p className="text-[10px] text-gray-400 text-center">
-              演出 {data.shows.length} · 花費 {data.expenses.length} · 系列 {data.series.length} · 藝人 {data.artists.length}
+              演出 {data.shows.length} · 花費 {data.expenses.length} · 系列 {data.series.length}
+              {' '}· 藝人 {data.artists.length} · 場地 {data.venues.length}
             </p>
           </>
         )}
@@ -115,6 +136,16 @@ export default function SettingsView({
           onMerge={onMergeArtists}
           onRemove={onRemoveArtist}
           onClose={() => setManagingArtists(false)}
+        />
+      )}
+
+      {managingVenues && (
+        <VenueManager
+          data={data}
+          onUpdate={onUpdateVenue}
+          onMerge={onMergeVenues}
+          onRemove={onRemoveVenue}
+          onClose={() => setManagingVenues(false)}
         />
       )}
     </div>
