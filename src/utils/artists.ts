@@ -1,81 +1,24 @@
 import { AppData, Artist } from '../types';
+import {
+  EntityIndex, buildIndex, entityIdFor, findEntity, normalizeName, searchEntities, uniqueEntityId,
+} from './entities';
 
-/**
- * Onew / onew / ONEW / "Onew " all collapse to the same key, so casing and
- * spacing slips never split an artist in two. Different scripts (온유, 李珍基)
- * stay separate on purpose — only a human can decide those are the same person,
- * which is what aliases are for.
- */
-export function normalizeName(name: string): string {
-  return name.normalize('NFKC').trim().toLowerCase().replace(/\s+/g, ' ');
-}
+export { normalizeName };
 
-/**
- * Ids are derived from the name rather than random, so the migration produces
- * the exact same ids no matter which device or tab runs it, and re-running it
- * is a no-op. FNV-1a + djb2 concatenated for ~64 bits of key space.
- */
-export function artistIdFor(name: string): string {
-  const key = normalizeName(name);
-  let h1 = 0x811c9dc5;
-  let h2 = 5381;
-  for (let i = 0; i < key.length; i++) {
-    const c = key.charCodeAt(i);
-    h1 = Math.imul(h1 ^ c, 0x01000193);
-    h2 = Math.imul(h2, 33) ^ c;
-  }
-  return 'a_' + (h1 >>> 0).toString(36) + (h2 >>> 0).toString(36);
-}
+const PREFIX = 'a_';
 
-export interface ArtistIndex {
-  byId: Map<string, Artist>;
-  byKey: Map<string, Artist>;
-}
+export type ArtistIndex = EntityIndex<Artist>;
 
-/** Both the display name and every alias resolve to the artist. First one wins. */
-export function buildArtistIndex(artists: Artist[]): ArtistIndex {
-  const byId = new Map<string, Artist>();
-  const byKey = new Map<string, Artist>();
-  for (const artist of artists) {
-    byId.set(artist.id, artist);
-    for (const name of [artist.name, ...artist.aliases]) {
-      const key = normalizeName(name);
-      if (key && !byKey.has(key)) byKey.set(key, artist);
-    }
-  }
-  return { byId, byKey };
-}
+export const artistIdFor = (name: string) => entityIdFor(PREFIX, name);
 
-export function findArtist(index: ArtistIndex, name: string): Artist | undefined {
-  const key = normalizeName(name);
-  return key ? index.byKey.get(key) : undefined;
-}
+export const buildArtistIndex = (artists: Artist[]): ArtistIndex => buildIndex(artists);
 
-/** Autocomplete: matches against the display name and every alias. */
-export function searchArtists(artists: Artist[], query: string, limit = 8): Artist[] {
-  const key = normalizeName(query);
-  if (!key) return [];
-  const hits: { artist: Artist; score: number }[] = [];
-  for (const artist of artists) {
-    let best = 0;
-    for (const name of [artist.name, ...artist.aliases]) {
-      const candidate = normalizeName(name);
-      if (!candidate.includes(key)) continue;
-      best = Math.max(best, candidate === key ? 3 : candidate.startsWith(key) ? 2 : 1);
-    }
-    if (best > 0) hits.push({ artist, score: best });
-  }
-  hits.sort((a, b) => b.score - a.score || a.artist.name.localeCompare(b.artist.name));
-  return hits.slice(0, limit).map(hit => hit.artist);
-}
+export const findArtist = (index: ArtistIndex, name: string) => findEntity(index, name);
 
-function uniqueId(index: ArtistIndex, name: string): string {
-  const base = artistIdFor(name);
-  let id = base;
-  let n = 2;
-  while (index.byId.has(id)) id = `${base}_${n++}`; // hash collision guard
-  return id;
-}
+export const searchArtists = (artists: Artist[], query: string, limit = 8) =>
+  searchEntities(artists, query, limit);
+
+const uniqueId = (index: ArtistIndex, name: string) => uniqueEntityId(index, PREFIX, name);
 
 /**
  * Builds an artist that doesn't exist yet, for the cases where you register one

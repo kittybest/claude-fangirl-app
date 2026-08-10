@@ -2,25 +2,33 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { AppData, Show, Schedule, Expense, Series, Artist } from '../types';
 import { generateId } from '../utils/id';
 import { migrateArtists, mergeArtistData, resolveArtistNames } from '../utils/artists';
+import { migrateVenues, resolveVenueName, resolveVenueNames } from '../utils/venues';
 
 const STORAGE_KEY = 'fangirl-app-data';
 
-const empty: AppData = { shows: [], schedules: [], expenses: [], series: [], artists: [] };
+const empty: AppData = { shows: [], schedules: [], expenses: [], series: [], artists: [], venues: [] };
 
-let backupPromise: Promise<boolean> | null = null;
+const backupPromises = new Map<string, Promise<boolean>>();
+/** Tags whose snapshot must exist before migrated data may be written back. */
+let requiredBackups: string[] = [];
 
 /** Snapshots the pre-migration data server-side. Remembers success, retries failure. */
-function ensureBackup(): Promise<boolean> {
-  if (!backupPromise) {
-    backupPromise = fetch('/api/backup', { method: 'POST' })
-      .then(res => res.ok)
-      .catch(() => false)
-      .then(ok => {
-        if (!ok) backupPromise = null;
-        return ok;
-      });
-  }
-  return backupPromise;
+function ensureBackup(tag: string): Promise<boolean> {
+  const pending = backupPromises.get(tag);
+  if (pending) return pending;
+  const request = fetch(`/api/backup?tag=${tag}`, { method: 'POST' })
+    .then(res => res.ok)
+    .catch(() => false)
+    .then(ok => {
+      if (!ok) backupPromises.delete(tag);
+      return ok;
+    });
+  backupPromises.set(tag, request);
+  return request;
+}
+
+function ensureRequiredBackups(): Promise<boolean> {
+  return Promise.all(requiredBackups.map(ensureBackup)).then(results => results.every(Boolean));
 }
 
 function getLocal(): AppData {
@@ -39,9 +47,18 @@ function normalize(data: Record<string, unknown>): { data: AppData; migrated: bo
     expenses: Array.isArray(data.expenses) ? data.expenses : [],
     series: Array.isArray(data.series) ? data.series : [],
     artists: Array.isArray(data.artists) ? data.artists : [],
+    venues: Array.isArray(data.venues) ? data.venues : [],
   } as AppData;
-  const { data: migrated, changed } = migrateArtists(base);
-  return { data: migrated, migrated: changed };
+  const artistPass = migrateArtists(base);
+  const venuePass = migrateVenues(artistPass.data);
+  // Each migration keeps its own snapshot — restoring the artist one would also
+  // undo every alias tidied up since then.
+  const tags = [
+    ...(artistPass.changed ? ['pre-artists'] : []),
+    ...(venuePass.changed ? ['pre-venues'] : []),
+  ];
+  requiredBackups = [...new Set([...requiredBackups, ...tags])];
+  return { data: venuePass.data, migrated: tags.length > 0 };
 }
 
 async function fetchRemote(): Promise<{ data: AppData; migrated: boolean }> {
@@ -67,7 +84,7 @@ async function fetchRemote(): Promise<{ data: AppData; migrated: boolean }> {
 
 async function saveRemote(data: AppData): Promise<void> {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  void ensureBackup(); // never blocks an edit, just keeps retrying in the background
+  void ensureRequiredBackups(); // never blocks an edit, just keeps retrying in the background
   try {
     await fetch('/api/data', {
       method: 'PUT',
@@ -89,8 +106,8 @@ export function useAppData() {
       // Only write the migration back once the snapshot is safely stored;
       // otherwise leave the remote untouched and retry on the next load.
       if (migrated) {
-        if (await ensureBackup()) await saveRemote(d);
-        else console.warn('Backup failed — artist migration not written back');
+        if (await ensureRequiredBackups()) await saveRemote(d);
+        else console.warn('Backup failed — migration not written back');
       }
     });
   }, []);
@@ -109,10 +126,12 @@ export function useAppData() {
     const newId = generateId();
     setData(d => {
       const { artistIds, artists } = resolveArtistNames(d.artists, show.artists);
+      const { venueId, venues } = resolveVenueName(d.venues, show.venue, show.venueUrl);
       return {
         ...d,
         artists,
-        shows: [...d.shows, { ...show, id: newId, artistIds }],
+        venues,
+        shows: [...d.shows, { ...show, id: newId, artistIds, venueId }],
         // If show has seriesId, add it to that series' showIds
         series: show.seriesId
           ? d.series.map(sr => sr.id === show.seriesId ? { ...sr, showIds: [...sr.showIds, newId] } : sr)
@@ -150,11 +169,22 @@ export function useAppData() {
         resolved = result.artistIds;
       }
 
+      let venues = d.venues;
+      let venuePatch: { venueId?: string } | undefined;
+      if (updates.venue !== undefined || updates.venueUrl !== undefined) {
+        const name = updates.venue !== undefined ? updates.venue : oldShow?.venue;
+        const url = updates.venueUrl !== undefined ? updates.venueUrl : oldShow?.venueUrl;
+        const result = resolveVenueName(d.venues, name, url);
+        venues = result.venues;
+        venuePatch = { venueId: result.venueId };
+      }
+
       return {
         ...d,
         artists,
+        venues,
         shows: d.shows.map(s =>
-          s.id === id ? { ...s, ...updates, ...(resolved ? { artistIds: resolved } : {}) } : s
+          s.id === id ? { ...s, ...updates, ...(resolved ? { artistIds: resolved } : {}), ...venuePatch } : s
         ),
         series,
       };
@@ -223,11 +253,13 @@ export function useAppData() {
     const newShowIds = items.map(() => generateId());
     setData(d => {
       const { artistIds, artists } = resolveArtistNames(d.artists, artistNames);
+      const { venueIds, venues } = resolveVenueNames(d.venues, items.map(item => item.venue));
       const newShows: Show[] = items.map((item, i) => ({
         id: newShowIds[i],
         title,
         date: item.date,
         venue: item.venue || undefined,
+        venueId: venueIds[i],
         artists: artistNames,
         artistIds,
         links: [],
@@ -238,6 +270,7 @@ export function useAppData() {
       return {
         ...d,
         artists,
+        venues,
         shows: [...d.shows, ...newShows],
         series: [...(d.series || []), series],
       };
@@ -255,6 +288,8 @@ export function useAppData() {
       if (!series) return d;
 
       const { artistIds, artists } = resolveArtistNames(d.artists, artistNames);
+      const { venueIds, venues } = resolveVenueNames(d.venues, items.map(item => item.venue));
+      const venueIdByItem = new Map(items.map((item, i) => [item, venueIds[i]]));
 
       // Existing show IDs in this series
       const existingIds = new Set(series.showIds);
@@ -269,6 +304,7 @@ export function useAppData() {
         title,
         date: item.date,
         venue: item.venue || undefined,
+        venueId: venueIdByItem.get(item),
         artists: artistNames,
         artistIds,
         links: [],
@@ -283,7 +319,11 @@ export function useAppData() {
           if (!existingIds.has(s.id)) return s;
           const item = items.find(i => i.id === s.id);
           if (!item) return s;
-          return { ...s, title, artists: artistNames, artistIds, venue: item.venue || undefined };
+          return {
+            ...s, title, artists: artistNames, artistIds,
+            venue: item.venue || undefined,
+            venueId: venueIdByItem.get(item),
+          };
         });
 
       const allShowIds = [
@@ -294,6 +334,7 @@ export function useAppData() {
       return {
         ...d,
         artists,
+        venues,
         shows: [...updatedShows, ...newShows],
         schedules: d.schedules.filter(s => !s.relatedShowId || !removedIds.includes(s.relatedShowId)),
         series: (d.series || []).map(s =>

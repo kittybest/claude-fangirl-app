@@ -20,6 +20,17 @@ export interface Artist {
   reviewed?: boolean;
 }
 
+export interface Venue {
+  id: string;
+  name: string;
+  aliases: string[];
+  city?: string;
+  /** Belongs to the place, not to any single show. */
+  url?: string;
+  /** false/undefined = auto-created from input, not tidied up yet */
+  reviewed?: boolean;
+}
+
 export interface Show {
   id: string;
   title: string;
@@ -29,7 +40,9 @@ export interface Show {
   /** Raw text as typed. Kept as the input/display source; artistIds is what stats use. */
   artists: string[];
   artistIds?: string[];
+  /** Raw text as typed. Kept as the input source; venueId is what lookups use. */
   venue?: string;
+  venueId?: string;
   venueUrl?: string;
   seat?: string;
   category?: ShowCategory;
@@ -82,4 +95,5 @@ export interface AppData {
   expenses: Expense[];
   series: Series[];
   artists: Artist[];
+  venues: Venue[];
 }
