@@ -9,13 +9,26 @@ export interface ShowLink {
   url: string;
 }
 
+export interface Artist {
+  id: string;
+  name: string;
+  aliases: string[];
+  /** Groups this artist rolls up into. One level only: a member's shows count
+   *  toward the group, but the group's shows never count toward the member. */
+  groupIds?: string[];
+  /** false/undefined = auto-created from input, not tidied up yet */
+  reviewed?: boolean;
+}
+
 export interface Show {
   id: string;
   title: string;
   date: string; // YYYY-MM-DD
   time?: string;
   timezone?: string;
+  /** Raw text as typed. Kept as the input/display source; artistIds is what stats use. */
   artists: string[];
+  artistIds?: string[];
   venue?: string;
   venueUrl?: string;
   seat?: string;
@@ -50,6 +63,7 @@ export interface Expense {
   date: string; // YYYY-MM-DD
   category: ExpenseCategory;
   artists: string[];
+  artistIds?: string[];
   amount: number;
   currency: Currency;
   amountTWD: number;
@@ -67,4 +81,5 @@ export interface AppData {
   schedules: Schedule[];
   expenses: Expense[];
   series: Series[];
+  artists: Artist[];
 }

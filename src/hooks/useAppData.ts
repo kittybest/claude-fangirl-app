@@ -1,52 +1,73 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { AppData, Show, Schedule, Expense, Series } from '../types';
 import { generateId } from '../utils/id';
+import { migrateArtists, resolveArtistNames } from '../utils/artists';
 
 const STORAGE_KEY = 'fangirl-app-data';
 
-const empty: AppData = { shows: [], schedules: [], expenses: [], series: [] };
+const empty: AppData = { shows: [], schedules: [], expenses: [], series: [], artists: [] };
+
+let backupPromise: Promise<boolean> | null = null;
+
+/** Snapshots the pre-migration data server-side. Remembers success, retries failure. */
+function ensureBackup(): Promise<boolean> {
+  if (!backupPromise) {
+    backupPromise = fetch('/api/backup', { method: 'POST' })
+      .then(res => res.ok)
+      .catch(() => false)
+      .then(ok => {
+        if (!ok) backupPromise = null;
+        return ok;
+      });
+  }
+  return backupPromise;
+}
 
 function getLocal(): AppData {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? normalize(JSON.parse(raw)) : empty;
+    return raw ? normalize(JSON.parse(raw)).data : empty;
   } catch {
     return empty;
   }
 }
 
-function normalize(data: Record<string, unknown>): AppData {
-  return {
+function normalize(data: Record<string, unknown>): { data: AppData; migrated: boolean } {
+  const base = {
     shows: Array.isArray(data.shows) ? data.shows : [],
     schedules: Array.isArray(data.schedules) ? data.schedules : [],
     expenses: Array.isArray(data.expenses) ? data.expenses : [],
     series: Array.isArray(data.series) ? data.series : [],
+    artists: Array.isArray(data.artists) ? data.artists : [],
   } as AppData;
+  const { data: migrated, changed } = migrateArtists(base);
+  return { data: migrated, migrated: changed };
 }
 
-async function fetchRemote(): Promise<AppData> {
+async function fetchRemote(): Promise<{ data: AppData; migrated: boolean }> {
   try {
     const res = await fetch('/api/data');
     if (res.ok) {
       const raw = await res.json();
-      const data = normalize(raw);
+      const { data, migrated } = normalize(raw);
       if (data.shows.length > 0 || data.schedules.length > 0 || data.expenses.length > 0 || data.series.length > 0) {
-        return data;
+        return { data, migrated };
       }
       // Remote empty — check local for migration
       const local = getLocal();
       if (local.shows.length > 0 || local.schedules.length > 0 || local.expenses.length > 0) {
         await saveRemote(local);
-        return local;
+        return { data: local, migrated: false };
       }
-      return empty;
+      return { data: empty, migrated: false };
     }
   } catch {}
-  return getLocal();
+  return { data: getLocal(), migrated: false };
 }
 
 async function saveRemote(data: AppData): Promise<void> {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  void ensureBackup(); // never blocks an edit, just keeps retrying in the background
   try {
     await fetch('/api/data', {
       method: 'PUT',
@@ -62,7 +83,16 @@ export function useAppData() {
   const saveTimeout = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
-    fetchRemote().then(d => { setDataState(d); setLoaded(true); });
+    fetchRemote().then(async ({ data: d, migrated }) => {
+      setDataState(d);
+      setLoaded(true);
+      // Only write the migration back once the snapshot is safely stored;
+      // otherwise leave the remote untouched and retry on the next load.
+      if (migrated) {
+        if (await ensureBackup()) await saveRemote(d);
+        else console.warn('Backup failed — artist migration not written back');
+      }
+    });
   }, []);
 
   const setData = useCallback((updater: (prev: AppData) => AppData) => {
@@ -77,14 +107,18 @@ export function useAppData() {
   // Shows
   const addShow = useCallback((show: Omit<Show, 'id'>) => {
     const newId = generateId();
-    setData(d => ({
-      ...d,
-      shows: [...d.shows, { ...show, id: newId }],
-      // If show has seriesId, add it to that series' showIds
-      series: show.seriesId
-        ? d.series.map(sr => sr.id === show.seriesId ? { ...sr, showIds: [...sr.showIds, newId] } : sr)
-        : d.series,
-    }));
+    setData(d => {
+      const { artistIds, artists } = resolveArtistNames(d.artists, show.artists);
+      return {
+        ...d,
+        artists,
+        shows: [...d.shows, { ...show, id: newId, artistIds }],
+        // If show has seriesId, add it to that series' showIds
+        series: show.seriesId
+          ? d.series.map(sr => sr.id === show.seriesId ? { ...sr, showIds: [...sr.showIds, newId] } : sr)
+          : d.series,
+      };
+    });
   }, [setData]);
 
   const updateShow = useCallback((id: string, updates: Partial<Omit<Show, 'id'>>) => {
@@ -107,9 +141,21 @@ export function useAppData() {
         });
       }
 
+      // Re-resolve ids whenever the typed names change, so the two never drift
+      let artists = d.artists;
+      let resolved: string[] | undefined;
+      if (updates.artists !== undefined) {
+        const result = resolveArtistNames(d.artists, updates.artists);
+        artists = result.artists;
+        resolved = result.artistIds;
+      }
+
       return {
         ...d,
-        shows: d.shows.map(s => s.id === id ? { ...s, ...updates } : s),
+        artists,
+        shows: d.shows.map(s =>
+          s.id === id ? { ...s, ...updates, ...(resolved ? { artistIds: resolved } : {}) } : s
+        ),
         series,
       };
     });
@@ -138,11 +184,33 @@ export function useAppData() {
 
   // Expenses
   const addExpense = useCallback((expense: Omit<Expense, 'id'>) => {
-    setData(d => ({ ...d, expenses: [...d.expenses, { ...expense, id: generateId() }] }));
+    setData(d => {
+      const { artistIds, artists } = resolveArtistNames(d.artists, expense.artists);
+      return {
+        ...d,
+        artists,
+        expenses: [...d.expenses, { ...expense, id: generateId(), artistIds }],
+      };
+    });
   }, [setData]);
 
   const updateExpense = useCallback((id: string, updates: Partial<Omit<Expense, 'id'>>) => {
-    setData(d => ({ ...d, expenses: d.expenses.map(e => e.id === id ? { ...e, ...updates } : e) }));
+    setData(d => {
+      let artists = d.artists;
+      let resolved: string[] | undefined;
+      if (updates.artists !== undefined) {
+        const result = resolveArtistNames(d.artists, updates.artists);
+        artists = result.artists;
+        resolved = result.artistIds;
+      }
+      return {
+        ...d,
+        artists,
+        expenses: d.expenses.map(e =>
+          e.id === id ? { ...e, ...updates, ...(resolved ? { artistIds: resolved } : {}) } : e
+        ),
+      };
+    });
   }, [setData]);
 
   const removeExpense = useCallback((id: string) => {
@@ -150,39 +218,43 @@ export function useAppData() {
   }, [setData]);
 
   // Series — batch create shows
-  const addSeries = useCallback((title: string, artists: string[], items: { date: string; venue: string }[]) => {
+  const addSeries = useCallback((title: string, artistNames: string[], items: { date: string; venue: string }[]) => {
     const seriesId = generateId();
-    const newShows: Show[] = items.map(item => ({
-      id: generateId(),
-      title,
-      date: item.date,
-      venue: item.venue || undefined,
-      artists,
-      links: [],
-      seriesId,
-      status: 'interested' as const,
-    }));
-    const series: Series = {
-      id: seriesId,
-      title,
-      showIds: newShows.map(s => s.id),
-    };
-    setData(d => ({
-      ...d,
-      shows: [...d.shows, ...newShows],
-      series: [...(d.series || []), series],
-    }));
+    const newShowIds = items.map(() => generateId());
+    setData(d => {
+      const { artistIds, artists } = resolveArtistNames(d.artists, artistNames);
+      const newShows: Show[] = items.map((item, i) => ({
+        id: newShowIds[i],
+        title,
+        date: item.date,
+        venue: item.venue || undefined,
+        artists: artistNames,
+        artistIds,
+        links: [],
+        seriesId,
+        status: 'interested' as const,
+      }));
+      const series: Series = { id: seriesId, title, showIds: newShowIds };
+      return {
+        ...d,
+        artists,
+        shows: [...d.shows, ...newShows],
+        series: [...(d.series || []), series],
+      };
+    });
   }, [setData]);
 
   const updateSeries = useCallback((
     id: string,
     title: string,
-    artists: string[],
+    artistNames: string[],
     items: { id?: string; date: string; venue: string }[],
   ) => {
     setData(d => {
       const series = (d.series || []).find(s => s.id === id);
       if (!series) return d;
+
+      const { artistIds, artists } = resolveArtistNames(d.artists, artistNames);
 
       // Existing show IDs in this series
       const existingIds = new Set(series.showIds);
@@ -197,7 +269,8 @@ export function useAppData() {
         title,
         date: item.date,
         venue: item.venue || undefined,
-        artists,
+        artists: artistNames,
+        artistIds,
         links: [],
         seriesId: id,
         status: 'interested' as const,
@@ -210,7 +283,7 @@ export function useAppData() {
           if (!existingIds.has(s.id)) return s;
           const item = items.find(i => i.id === s.id);
           if (!item) return s;
-          return { ...s, title, artists, venue: item.venue || undefined };
+          return { ...s, title, artists: artistNames, artistIds, venue: item.venue || undefined };
         });
 
       const allShowIds = [
@@ -220,6 +293,7 @@ export function useAppData() {
 
       return {
         ...d,
+        artists,
         shows: [...updatedShows, ...newShows],
         schedules: d.schedules.filter(s => !s.relatedShowId || !removedIds.includes(s.relatedShowId)),
         series: (d.series || []).map(s =>
