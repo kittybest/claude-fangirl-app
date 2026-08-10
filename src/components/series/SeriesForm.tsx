@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Series, Show, Artist } from '../../types';
+import { buildArtistIndex, displayNames } from '../../utils/artists';
 import ArtistInput from '../ui/ArtistInput';
 
 interface SeriesItem {
@@ -17,7 +18,10 @@ interface Props {
 
 export default function SeriesForm({ initial, allArtists = [], onSave, onClose }: Props) {
   const [title, setTitle] = useState(initial?.series.title ?? '');
-  const [artists, setArtists] = useState<string[]>(initial?.shows[0]?.artists ?? []);
+  const [artists, setArtists] = useState<string[]>(() => {
+    const first = initial?.shows[0];
+    return first ? displayNames(buildArtistIndex(allArtists), first) : [];
+  });
   const [items, setItems] = useState<SeriesItem[]>(
     initial
       ? initial.series.showIds

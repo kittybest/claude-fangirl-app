@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Expense, ExpenseCategory, Currency, Artist } from '../../types';
 import { EXPENSE_CATEGORIES } from '../../utils/constants';
 import { CURRENCIES, convertToTWD } from '../../utils/currency';
+import { buildArtistIndex, displayNames } from '../../utils/artists';
 import ArtistInput from '../ui/ArtistInput';
 
 interface Props {
@@ -15,7 +16,9 @@ export default function ExpenseForm({ initial, allArtists = [], onSave, onClose 
   const [description, setDescription] = useState(initial?.description ?? '');
   const [date, setDate] = useState(initial?.date ?? new Date().toISOString().slice(0, 10));
   const [category, setCategory] = useState<ExpenseCategory>(initial?.category ?? '門票');
-  const [artists, setArtists] = useState<string[]>(initial?.artists ?? []);
+  const [artists, setArtists] = useState<string[]>(
+    () => initial ? displayNames(buildArtistIndex(allArtists), initial) : []
+  );
   const [amount, setAmount] = useState(initial?.amount.toString() ?? '');
   const [currency, setCurrency] = useState<Currency>(initial?.currency ?? 'TWD');
   const [amountTWD, setAmountTWD] = useState(initial?.amountTWD?.toString() ?? '');

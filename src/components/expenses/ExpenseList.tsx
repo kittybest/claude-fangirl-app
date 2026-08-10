@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Expense, Show, Artist } from '../../types';
 import { showCategoryToExpenseCategory } from '../../utils/constants';
+import { buildArtistIndex, displayNames } from '../../utils/artists';
 import ExpenseForm from './ExpenseForm';
 
 interface Props {
@@ -33,6 +34,8 @@ export default function ExpenseList({ expenses, shows, allArtists = [], isAuthor
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
 
+  const artistIndex = useMemo(() => buildArtistIndex(allArtists), [allArtists]);
+
   // Merge show ticket prices into expense list
   const showExpenses: DisplayExpense[] = shows
     .filter(s => s.ticketPriceTWD && s.ticketPriceTWD > 0)
@@ -45,7 +48,7 @@ export default function ExpenseList({ expenses, shows, allArtists = [], isAuthor
         description: s.title + (s.status === 'cancelled' ? ' (轉售)' : ''),
         date: s.date,
         category: showCategoryToExpenseCategory(s.category),
-        artists: s.artists,
+        artists: displayNames(artistIndex, s),
         amount: s.status === 'cancelled'
           ? (s.ticketPrice || 0) - (s.resalePrice || 0)
           : s.ticketPrice!,
@@ -57,6 +60,7 @@ export default function ExpenseList({ expenses, shows, allArtists = [], isAuthor
 
   const manualExpenses: DisplayExpense[] = expenses.map(e => ({
     ...e,
+    artists: displayNames(artistIndex, e),
     isFromShow: false,
   }));
 

@@ -1,10 +1,9 @@
-type Tab = 'calendar' | 'lists' | 'expenses' | 'stats';
+type Tab = 'calendar' | 'lists' | 'expenses' | 'stats' | 'settings';
 
 interface Props {
   active: Tab;
   onChange: (tab: Tab) => void;
   isAuthorized: boolean;
-  onAuthClick: () => void;
 }
 
 const tabs: { key: Tab; label: string; icon: string; authOnly?: boolean }[] = [
@@ -14,7 +13,7 @@ const tabs: { key: Tab; label: string; icon: string; authOnly?: boolean }[] = [
   { key: 'stats', label: '統計', icon: '📊', authOnly: true },
 ];
 
-export default function BottomNav({ active, onChange, isAuthorized, onAuthClick }: Props) {
+export default function BottomNav({ active, onChange, isAuthorized }: Props) {
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex z-50">
       {tabs.map(t => (
@@ -30,13 +29,14 @@ export default function BottomNav({ active, onChange, isAuthorized, onAuthClick 
         </button>
       ))}
       <button
-        onClick={onAuthClick}
-        className={`w-14 py-2 flex flex-col items-center gap-0.5 text-xs transition-colors ${
-          isAuthorized ? 'text-green-500' : 'text-gray-400'
+        onClick={() => onChange('settings')}
+        className={`flex-1 py-2 flex flex-col items-center gap-0.5 text-xs transition-colors ${
+          active === 'settings' ? 'text-purple-600' : 'text-gray-400'
         }`}
       >
-        <span className="text-lg">{isAuthorized ? '🔓' : '🔒'}</span>
-        <span>{isAuthorized ? '已登入' : '登入'}</span>
+        {/* The icon doubles as the login indicator the old auth button provided */}
+        <span className="text-lg">{isAuthorized ? '⚙️' : '🔒'}</span>
+        <span>設定</span>
       </button>
     </nav>
   );

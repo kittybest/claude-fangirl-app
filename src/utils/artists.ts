@@ -108,6 +108,77 @@ export function resolveArtistNames(
   return { artistIds, artists: nextArtists };
 }
 
+/** Ids are the source of truth; the raw strings are only a fallback for records that predate them. */
+export function displayNames(
+  index: ArtistIndex,
+  record: { artists: string[]; artistIds?: string[] },
+): string[] {
+  if (!record.artistIds || record.artistIds.length === 0) return record.artists;
+  return record.artistIds
+    .map(id => index.byId.get(id)?.name)
+    .filter((name): name is string => !!name);
+}
+
+export function artistUsage(data: AppData): Map<string, { shows: number; expenses: number }> {
+  const usage = new Map<string, { shows: number; expenses: number }>();
+  const bump = (id: string, field: 'shows' | 'expenses') => {
+    const entry = usage.get(id) || { shows: 0, expenses: 0 };
+    entry[field]++;
+    usage.set(id, entry);
+  };
+  for (const show of data.shows) for (const id of show.artistIds || []) bump(id, 'shows');
+  for (const expense of data.expenses) for (const id of expense.artistIds || []) bump(id, 'expenses');
+  return usage;
+}
+
+/** Members of a group. One level only — this never recurses. */
+export function membersOf(artists: Artist[], groupId: string): Artist[] {
+  return artists.filter(a => a.groupIds?.includes(groupId));
+}
+
+/**
+ * Folds `fromId` into `intoId`: its name and aliases become aliases of the
+ * target, every reference is repointed, and it is removed.
+ */
+export function mergeArtistData(data: AppData, fromId: string, intoId: string): AppData {
+  if (fromId === intoId) return data;
+  const from = data.artists.find(a => a.id === fromId);
+  const into = data.artists.find(a => a.id === intoId);
+  if (!from || !into) return data;
+
+  // The target's own aliases are kept verbatim; only the incoming ones are deduped
+  const aliases = [...into.aliases];
+  const seen = new Set([normalizeName(into.name), ...aliases.map(normalizeName)]);
+  for (const alias of [from.name, ...from.aliases]) {
+    const key = normalizeName(alias);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    aliases.push(alias);
+  }
+
+  // Repoint, dedupe, and never let an artist end up in its own group list
+  const swap = (ids: string[]) => [...new Set(ids.map(id => (id === fromId ? intoId : id)))];
+  const groupIds = swap([...(into.groupIds || []), ...(from.groupIds || [])]).filter(id => id !== intoId);
+
+  const artists = data.artists
+    .filter(a => a.id !== fromId)
+    .map(a => {
+      if (a.id === intoId) return { ...into, aliases, groupIds, reviewed: true };
+      if (!a.groupIds?.includes(fromId)) return a;
+      return { ...a, groupIds: swap(a.groupIds).filter(id => id !== a.id) };
+    });
+
+  const repoint = <T extends { artistIds?: string[] }>(record: T): T =>
+    record.artistIds?.includes(fromId) ? { ...record, artistIds: swap(record.artistIds) } : record;
+
+  return {
+    ...data,
+    artists,
+    shows: data.shows.map(repoint),
+    expenses: data.expenses.map(repoint),
+  };
+}
+
 /**
  * Backfills artistIds from the legacy artists strings, once per record. Also
  * self-heals records whose ids point at artists that went missing (an old

@@ -1,6 +1,8 @@
-import { Show, Schedule, Series } from '../../types';
+import { useMemo } from 'react';
+import { Show, Schedule, Series, Artist } from '../../types';
 import { STATUS_CONFIG, SHOW_CATEGORIES, SCHEDULE_TYPES } from '../../utils/constants';
 import { weekdayZh } from '../../utils/date';
+import { buildArtistIndex, displayNames } from '../../utils/artists';
 import StarRating from '../ui/StarRating';
 
 interface Props {
@@ -9,6 +11,7 @@ interface Props {
   schedules: Schedule[];
   allShows: Show[];
   allSeries: Series[];
+  allArtists: Artist[];
   isAuthorized: boolean;
   onGoToSeries: (seriesId: string) => void;
   onNavigateToDate: (date: string) => void;
@@ -22,7 +25,8 @@ interface Props {
   onDeleteSchedule: (id: string) => void;
 }
 
-export default function DayDetail({ date, shows, schedules, allShows, allSeries, isAuthorized, onGoToSeries, onNavigateToDate, onEditShow, onDuplicateShow, onEditSchedule, onDuplicateSchedule, onDeleteShow, onDeleteSchedule }: Props) {
+export default function DayDetail({ date, shows, schedules, allShows, allSeries, allArtists, isAuthorized, onGoToSeries, onNavigateToDate, onEditShow, onDuplicateShow, onEditSchedule, onDuplicateSchedule, onDeleteShow, onDeleteSchedule }: Props) {
+  const artistIndex = useMemo(() => buildArtistIndex(allArtists), [allArtists]);
   const d = new Date(date + 'T00:00:00');
   const label = `${d.getMonth() + 1}/${d.getDate()} (${weekdayZh(d)})`;
 
@@ -59,8 +63,8 @@ export default function DayDetail({ date, shows, schedules, allShows, allSeries,
               {STATUS_CONFIG[s.status].label}
             </span>
           </div>
-          {s.artists.length > 0 && (
-            <p className="text-xs text-gray-500 mt-1">{s.artists.join(', ')}</p>
+          {displayNames(artistIndex, s).length > 0 && (
+            <p className="text-xs text-gray-500 mt-1">{displayNames(artistIndex, s).join(', ')}</p>
           )}
           {s.seriesId && (() => {
             const sr = allSeries.find(sr => sr.id === s.seriesId);

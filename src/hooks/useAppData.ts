@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { AppData, Show, Schedule, Expense, Series } from '../types';
+import { AppData, Show, Schedule, Expense, Series, Artist } from '../types';
 import { generateId } from '../utils/id';
-import { migrateArtists, resolveArtistNames } from '../utils/artists';
+import { migrateArtists, mergeArtistData, resolveArtistNames } from '../utils/artists';
 
 const STORAGE_KEY = 'fangirl-app-data';
 
@@ -316,11 +316,33 @@ export function useAppData() {
     });
   }, [setData]);
 
+  // Artists
+  const updateArtist = useCallback((id: string, updates: Partial<Omit<Artist, 'id'>>) => {
+    setData(d => ({
+      ...d,
+      artists: d.artists.map(a => a.id === id ? { ...a, ...updates } : a),
+    }));
+  }, [setData]);
+
+  const mergeArtists = useCallback((fromId: string, intoId: string) => {
+    setData(d => mergeArtistData(d, fromId, intoId));
+  }, [setData]);
+
+  const removeArtist = useCallback((id: string) => {
+    setData(d => ({
+      ...d,
+      artists: d.artists
+        .filter(a => a.id !== id)
+        .map(a => a.groupIds?.includes(id) ? { ...a, groupIds: a.groupIds.filter(g => g !== id) } : a),
+    }));
+  }, [setData]);
+
   return {
     data, loaded,
     addShow, updateShow, removeShow,
     addSchedule, updateSchedule, removeSchedule,
     addExpense, updateExpense, removeExpense,
     addSeries, updateSeries, removeSeries,
+    updateArtist, mergeArtists, removeArtist,
   };
 }

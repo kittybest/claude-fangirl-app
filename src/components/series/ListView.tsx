@@ -1,19 +1,22 @@
-import { useState } from 'react';
-import { Show, Series } from '../../types';
+import { useMemo, useState } from 'react';
+import { Show, Series, Artist } from '../../types';
 import { STATUS_CONFIG } from '../../utils/constants';
+import { buildArtistIndex, displayNames } from '../../utils/artists';
 
 type SubTab = 'series' | 'artists' | 'upcoming';
 
 interface Props {
   shows: Show[];
   series: Series[];
+  allArtists: Artist[];
   isAuthorized: boolean;
   onEditSeries: (series: Series) => void;
   onDeleteSeries: (id: string) => void;
   expandSeriesId?: string | null;
 }
 
-export default function ListView({ shows, series, isAuthorized, onEditSeries, onDeleteSeries, expandSeriesId }: Props) {
+export default function ListView({ shows, series, allArtists, isAuthorized, onEditSeries, onDeleteSeries, expandSeriesId }: Props) {
+  const artistIndex = useMemo(() => buildArtistIndex(allArtists), [allArtists]);
   const [subTab, setSubTab] = useState<SubTab>('series');
   const [expandedId, setExpandedId] = useState<string | null>(expandSeriesId ?? null);
 
@@ -22,7 +25,7 @@ export default function ListView({ shows, series, isAuthorized, onEditSeries, on
   // Build artist -> shows map
   const artistMap: Record<string, Show[]> = {};
   for (const s of shows) {
-    for (const a of s.artists) {
+    for (const a of displayNames(artistIndex, s)) {
       if (!artistMap[a]) artistMap[a] = [];
       artistMap[a].push(s);
     }

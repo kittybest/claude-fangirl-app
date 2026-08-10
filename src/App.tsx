@@ -8,11 +8,12 @@ import CalendarView from './components/calendar/CalendarView';
 import ListView from './components/series/ListView';
 import ExpenseList from './components/expenses/ExpenseList';
 import StatsView from './components/stats/StatsView';
+import SettingsView from './components/settings/SettingsView';
 import ShowForm from './components/shows/ShowForm';
 import ScheduleForm from './components/schedules/ScheduleForm';
 import SeriesForm from './components/series/SeriesForm';
 
-type Tab = 'calendar' | 'lists' | 'expenses' | 'stats';
+type Tab = 'calendar' | 'lists' | 'expenses' | 'stats' | 'settings';
 
 export default function App() {
   const {
@@ -21,6 +22,7 @@ export default function App() {
     addSchedule, updateSchedule, removeSchedule,
     addExpense, updateExpense, removeExpense,
     addSeries, updateSeries, removeSeries,
+    updateArtist, mergeArtists, removeArtist,
   } = useAppData();
   const { isAuthorized, login, logout } = useAuth();
 
@@ -50,6 +52,7 @@ export default function App() {
           shows={data.shows}
           schedules={data.schedules}
           allSeries={data.series || []}
+          allArtists={data.artists || []}
           isAuthorized={isAuthorized}
           onAddShow={(d) => { setShowFormDate(d); setShowForm(true); }}
           onAddSchedule={(d) => { setScheduleFormDate(d); setScheduleForm(true); }}
@@ -67,6 +70,7 @@ export default function App() {
         <ListView
           shows={data.shows}
           series={data.series || []}
+          allArtists={data.artists || []}
           isAuthorized={isAuthorized}
           onEditSeries={sr => setEditingSeries(sr)}
           onDeleteSeries={removeSeries}
@@ -86,6 +90,17 @@ export default function App() {
       )}
       {tab === 'stats' && isAuthorized && (
         <StatsView shows={data.shows} expenses={data.expenses} />
+      )}
+      {tab === 'settings' && (
+        <SettingsView
+          data={data}
+          isAuthorized={isAuthorized}
+          onLoginClick={() => setLoginModal(true)}
+          onLogout={logout}
+          onUpdateArtist={updateArtist}
+          onMergeArtists={mergeArtists}
+          onRemoveArtist={removeArtist}
+        />
       )}
 
       {/* Series Form (new or edit) */}
@@ -119,7 +134,6 @@ export default function App() {
         active={tab}
         onChange={t => { setTab(t); if (t !== 'lists') setExpandSeriesId(null); }}
         isAuthorized={isAuthorized}
-        onAuthClick={() => isAuthorized ? logout() : setLoginModal(true)}
       />
 
       {loginModal && (

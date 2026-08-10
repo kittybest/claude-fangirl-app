@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Show, ShowLink, ShowStatus, ShowCategory, Currency, Series, Artist } from '../../types';
 import { SHOW_CATEGORIES, STATUS_CONFIG, TIMEZONES } from '../../utils/constants';
 import { CURRENCIES, convertToTWD } from '../../utils/currency';
+import { buildArtistIndex, displayNames } from '../../utils/artists';
 import StarRating from '../ui/StarRating';
 import ArtistInput from '../ui/ArtistInput';
 
@@ -27,7 +28,9 @@ export default function ShowForm({ initial, isEdit, defaultDate, allSeries = [],
     ? allSeries.filter(s => s.title.toLowerCase().includes(seriesSearch.toLowerCase())).slice(0, 8)
     : [];
   const [timezone, setTimezone] = useState(initial?.timezone ?? 'Asia/Taipei');
-  const [artists, setArtists] = useState<string[]>(initial?.artists ?? []);
+  const [artists, setArtists] = useState<string[]>(
+    () => initial ? displayNames(buildArtistIndex(allArtists), initial) : []
+  );
   const [venue, setVenue] = useState(initial?.venue ?? '');
   const [venueUrl, setVenueUrl] = useState(initial?.venueUrl ?? '');
   const [seat, setSeat] = useState(initial?.seat ?? '');
