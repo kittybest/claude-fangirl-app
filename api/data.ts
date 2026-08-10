@@ -18,7 +18,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'GET') {
     try {
       const data = await redis.get(DATA_KEY);
-      if (!data) return res.status(200).json({ shows: [], schedules: [], expenses: [], series: [], artists: [] });
+      if (!data) return res.status(200).json({ shows: [], schedules: [], expenses: [], series: [], artists: [], venues: [] });
       const parsed = typeof data === 'string' ? JSON.parse(data) : data;
       return res.status(200).json(parsed);
     } catch (err) {
@@ -38,6 +38,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         expenses: body.expenses || [],
         series: body.series || [],
         artists: body.artists || [],
+        venues: body.venues || [],
       }));
       return res.status(200).json({ ok: true });
     } catch (err) {

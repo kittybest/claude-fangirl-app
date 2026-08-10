@@ -7,7 +7,16 @@ const redis = new Redis({
 });
 
 const DATA_KEY = 'fangirl:data';
-const BACKUP_KEY = 'fangirl:data:backup-pre-artists';
+
+// One snapshot per migration — restoring an older one would also undo the
+// manual cleanup done since, so each migration gets its own tag.
+const TAGS = ['pre-artists', 'pre-venues'] as const;
+const DEFAULT_TAG = 'pre-artists';
+
+function backupKey(tag: unknown): string | null {
+  const value = typeof tag === 'string' && tag ? tag : DEFAULT_TAG;
+  return (TAGS as readonly string[]).includes(value) ? `fangirl:data:backup-${value}` : null;
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -15,6 +24,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  const BACKUP_KEY = backupKey(req.query.tag);
+  if (!BACKUP_KEY) return res.status(400).json({ error: 'Unknown backup tag' });
 
   // Snapshot the current data, but never overwrite an existing snapshot —
   // the point is to keep the state from before the artist migration ran.
