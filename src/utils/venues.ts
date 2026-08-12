@@ -81,6 +81,56 @@ export function resolveVenueNames(
   return { venueIds, venues: next };
 }
 
+export interface VenueStatRow {
+  key: string;
+  name: string;
+  city?: string;
+  count: number;
+}
+
+type StatShow = { venue?: string; venueId?: string };
+
+/**
+ * Visit counts per venue. Shows that predate ids fall back to their raw text
+ * rather than vanishing from the totals.
+ */
+export function aggregateByVenue(venues: Venue[], shows: StatShow[]): VenueStatRow[] {
+  const index = buildVenueIndex(venues);
+  const keyFor = (show: StatShow): string | undefined => {
+    if (show.venueId && index.byId.has(show.venueId)) return show.venueId;
+    const name = show.venue?.trim();
+    if (name) return findVenue(index, name)?.id ?? `raw:${name}`;
+    return show.venueId; // dangling id with nothing to fall back on — keep the count
+  };
+
+  const counts = new Map<string, number>();
+  for (const show of shows) {
+    const key = keyFor(show);
+    if (key) counts.set(key, (counts.get(key) || 0) + 1);
+  }
+
+  return [...counts]
+    .map(([key, count]) => {
+      const venue = index.byId.get(key);
+      return { key, name: venue?.name ?? key.replace(/^raw:/, ''), city: venue?.city, count };
+    })
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+}
+
+/** Venues with no city land in a single undefined bucket, sorted last. */
+export function aggregateByCity(venues: Venue[], shows: StatShow[]): { city?: string; count: number }[] {
+  const counts = new Map<string | undefined, number>();
+  for (const row of aggregateByVenue(venues, shows)) {
+    counts.set(row.city, (counts.get(row.city) || 0) + row.count);
+  }
+  return [...counts]
+    .map(([city, count]) => ({ city, count }))
+    .sort((a, b) => {
+      if (!a.city !== !b.city) return a.city ? -1 : 1;
+      return b.count - a.count || (a.city || '').localeCompare(b.city || '');
+    });
+}
+
 export function venueUsage(shows: { venueId?: string }[]): Map<string, number> {
   const usage = new Map<string, number>();
   for (const show of shows) {

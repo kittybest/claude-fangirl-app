@@ -1,18 +1,23 @@
 import { useState } from 'react';
-import { Show, Expense, Artist } from '../../types';
+import { Show, Expense, Artist, Venue } from '../../types';
 import { SHOW_CATEGORIES, showCategoryToExpenseCategory } from '../../utils/constants';
 import { aggregateByArtist, ArtistBucket } from '../../utils/artists';
+import { aggregateByCity, aggregateByVenue } from '../../utils/venues';
+
+type BreakdownTab = 'artists' | 'venues' | 'cities';
 
 interface Props {
   shows: Show[];
   expenses: Expense[];
   artists: Artist[];
+  venues: Venue[];
 }
 
-export default function StatsView({ shows, expenses, artists }: Props) {
+export default function StatsView({ shows, expenses, artists, venues }: Props) {
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState<number | null>(null); // null = full year
   const [expandedArtist, setExpandedArtist] = useState<string | null>(null);
+  const [breakdown, setBreakdown] = useState<BreakdownTab>('artists');
 
   // Only count ticketed and cancelled for stats (not interested)
   const filteredShows = shows.filter(s => {
@@ -54,6 +59,9 @@ export default function StatsView({ shows, expenses, artists }: Props) {
   }
 
   const artistRows = aggregateByArtist(artists, attendedShows, filteredExpenses);
+  const venueRows = aggregateByVenue(venues, attendedShows);
+  const cityRows = aggregateByCity(venues, attendedShows);
+  const namedCities = cityRows.filter(row => row.city).length;
 
   // By show category
   const byShowCategory: Record<string, number> = {};
@@ -90,6 +98,8 @@ export default function StatsView({ shows, expenses, artists }: Props) {
           <p className="text-3xl font-bold text-purple-600 mt-1">NT${totalTWD.toLocaleString()}</p>
           <p className="text-xs text-gray-400 mt-1">
             演出 {attendedShows.length} 場
+            {venueRows.length > 0 && ` · ${venueRows.length} 個場地`}
+            {namedCities > 0 && ` · ${namedCities} 個城市`}
           </p>
         </div>
 
@@ -128,11 +138,55 @@ export default function StatsView({ shows, expenses, artists }: Props) {
           </div>
         )}
 
-        {/* By artist */}
-        {artistRows.length > 0 && (
+        {/* By artist / venue / city */}
+        {(artistRows.length > 0 || venueRows.length > 0) && (
           <div className="bg-white rounded-xl p-4 shadow-sm">
-            <h3 className="text-sm font-bold text-gray-700 mb-2">藝人/演出者</h3>
-            {artistRows.map(row => {
+            <div className="flex gap-1 mb-2">
+              {([
+                ['artists', '藝人'],
+                ['venues', '場地'],
+                ['cities', '城市'],
+              ] as [BreakdownTab, string][]).map(([key, label]) => (
+                <button key={key} onClick={() => setBreakdown(key)}
+                  className={`flex-1 text-xs py-1.5 rounded-full border transition-colors ${
+                    breakdown === key ? 'bg-purple-100 text-purple-700 border-purple-300' : 'border-gray-200 text-gray-400'
+                  }`}>
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {breakdown === 'venues' && (
+              venueRows.length === 0
+                ? <p className="text-gray-400 text-xs text-center py-4">沒有場地資料</p>
+                : venueRows.map(row => (
+                  <div key={row.key} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
+                    <span className="text-sm text-gray-700 truncate">
+                      {row.name}
+                      {row.city && <span className="text-[10px] text-gray-400 ml-1.5">{row.city}</span>}
+                    </span>
+                    <span className="text-xs text-purple-600 font-medium flex-shrink-0">{row.count}場</span>
+                  </div>
+                ))
+            )}
+
+            {breakdown === 'cities' && (
+              cityRows.length === 0
+                ? <p className="text-gray-400 text-xs text-center py-4">沒有城市資料</p>
+                : cityRows.map(row => (
+                  <div key={row.city ?? '_'} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
+                    <span className={`text-sm truncate ${row.city ? 'text-gray-700' : 'text-gray-400'}`}>
+                      {row.city ?? '未設定'}
+                    </span>
+                    <span className="text-xs text-purple-600 font-medium flex-shrink-0">{row.count}場</span>
+                  </div>
+                ))
+            )}
+
+            {breakdown === 'artists' && artistRows.length === 0 && (
+              <p className="text-gray-400 text-xs text-center py-4">沒有藝人資料</p>
+            )}
+            {breakdown === 'artists' && artistRows.map(row => {
               const isOpen = expandedArtist === row.key;
               return (
                 <div key={row.key} className="border-b border-gray-50 last:border-0">
@@ -166,7 +220,7 @@ export default function StatsView({ shows, expenses, artists }: Props) {
           </div>
         )}
 
-        {artistRows.some(r => r.members.length > 0) && (
+        {breakdown === 'artists' && artistRows.some(r => r.members.length > 0) && (
           <p className="text-[10px] text-gray-400 text-center">
             團體的數字含成員場次，同一場只算一次；成員那列只算標到本人的
           </p>
