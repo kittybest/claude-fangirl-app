@@ -108,156 +108,158 @@ export default function ShowForm({ initial, isEdit, defaultDate, allSeries = [],
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-end justify-center">
-      <div className="bg-white rounded-t-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-4">
-        <div className="flex items-center justify-between mb-3">
+      <div className="bg-white rounded-t-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b">
           <h2 className="text-base font-bold">{isEdit ? '編輯演出' : initial ? '複製演出' : '新增演出'}</h2>
           <button onClick={onClose} className="text-gray-400 text-xl">&times;</button>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-2.5">
-          <input value={title} onChange={e => setTitle(e.target.value)} placeholder="演出名稱 *" required
-            className="w-full border rounded-lg px-3 py-2 text-sm" />
-          <input type="date" value={date} onChange={e => setDate(e.target.value)} required
-            className="w-full border rounded-lg px-3 py-2 text-sm" />
-          <div className="flex gap-2">
-            <input type="time" value={time} onChange={e => setTime(e.target.value)} placeholder="時間"
-              className="flex-1 border rounded-lg px-3 py-2 text-sm" />
-            <select value={timezone} onChange={e => setTimezone(e.target.value)}
-              className="flex-1 border rounded-lg px-2 py-2 text-sm bg-white">
-              {TIMEZONES.map(tz => <option key={tz.value} value={tz.value}>{tz.label}</option>)}
-            </select>
-          </div>
-          <ArtistInput value={artists} artists={allArtists} onChange={setArtists} placeholder="演出者" />
-          <VenueInput value={venue} venues={allVenues} onChange={setVenue}
-            onSelect={v => setVenueUrl(v.url ?? '')} placeholder="地點" />
-          <div>
-            <input value={venueUrl} onChange={e => setVenueUrl(e.target.value)} placeholder="地點連結 (選填)"
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4 pt-3">
+          <form onSubmit={handleSubmit} className="space-y-2.5">
+            <input value={title} onChange={e => setTitle(e.target.value)} placeholder="演出名稱 *" required
               className="w-full border rounded-lg px-3 py-2 text-sm" />
-            {venue.trim() && (
-              <p className="text-[10px] text-gray-400 mt-0.5">連結屬於場地，修改會影響所有同場地演出；留空不會清除既有連結</p>
-            )}
-          </div>
-          <input value={seat} onChange={e => setSeat(e.target.value)} placeholder="座位 (選填)"
-            className="w-full border rounded-lg px-3 py-2 text-sm" />
-          <select value={category} onChange={e => setCategory(e.target.value as ShowCategory | '')}
-            className="w-full border rounded-lg px-3 py-2 text-sm bg-white">
-            <option value="">類別 (選填)</option>
-            {SHOW_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-          </select>
-
-          {/* Series */}
-          <div className="relative">
-            {selectedSeries ? (
-              <div className="flex items-center gap-2 border rounded-lg px-3 py-2 text-sm bg-gray-50">
-                <span className="flex-1 text-gray-700 truncate">系列: {selectedSeries.title}</span>
-                <button type="button" onClick={() => { setSeriesId(''); setSeriesSearch(''); }}
-                  className="text-gray-400 text-xs">✕</button>
-              </div>
-            ) : (
-              <input
-                value={seriesSearch}
-                onChange={e => { setSeriesSearch(e.target.value); setSeriesSearchOpen(true); }}
-                onFocus={() => setSeriesSearchOpen(true)}
-                placeholder="加入系列 (選填)"
-                className="w-full border rounded-lg px-3 py-2 text-sm"
-              />
-            )}
-            {seriesSearchOpen && filteredSeries.length > 0 && (
-              <ul className="absolute z-10 w-full bg-white border rounded-lg mt-1 shadow-lg max-h-40 overflow-y-auto">
-                {filteredSeries.map(s => (
-                  <li key={s.id}
-                    onClick={() => { setSeriesId(s.id); setSeriesSearch(''); setSeriesSearchOpen(false); }}
-                    className="px-3 py-2 text-xs hover:bg-purple-50 cursor-pointer border-b border-gray-50 last:border-0 truncate">
-                    {s.title}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          {/* Links */}
-          <div>
-            <p className="text-xs text-gray-500 mb-1">相關連結</p>
-            {links.map((link, i) => (
-              <div key={i} className="flex items-center gap-1 mb-1">
-                <span className="text-xs text-blue-500 flex-1 truncate">{link.label}: {link.url}</span>
-                <button type="button" onClick={() => removeLink(i)} className="text-[10px] text-red-400">x</button>
-              </div>
-            ))}
-            <div className="flex gap-1">
-              <input value={newLinkLabel} onChange={e => setNewLinkLabel(e.target.value)} placeholder="名稱"
-                className="w-20 border rounded-lg px-2 py-1.5 text-xs" />
-              <input value={newLinkUrl} onChange={e => setNewLinkUrl(e.target.value)} placeholder="URL"
-                className="flex-1 border rounded-lg px-2 py-1.5 text-xs" />
-              <button type="button" onClick={addLink}
-                className="text-xs bg-gray-100 text-gray-600 px-2 py-1.5 rounded-lg">+</button>
+            <input type="date" value={date} onChange={e => setDate(e.target.value)} required
+              className="w-full border rounded-lg px-3 py-2 text-sm" />
+            <div className="flex gap-2">
+              <input type="time" value={time} onChange={e => setTime(e.target.value)} placeholder="時間"
+                className="flex-1 border rounded-lg px-3 py-2 text-sm" />
+              <select value={timezone} onChange={e => setTimezone(e.target.value)}
+                className="flex-1 border rounded-lg px-2 py-2 text-sm bg-white">
+                {TIMEZONES.map(tz => <option key={tz.value} value={tz.value}>{tz.label}</option>)}
+              </select>
             </div>
-          </div>
-
-          {/* Status */}
-          <div className="flex gap-1.5">
-            {(['interested', 'ticketed', 'cancelled'] as ShowStatus[]).map(s => (
-              <button key={s} type="button" onClick={() => setStatus(s)}
-                className={`flex-1 text-xs py-1.5 rounded-full border transition-colors ${
-                  status === s ? STATUS_CONFIG[s].color + ' border-current' : 'border-gray-200 text-gray-400'
-                }`}>
-                {STATUS_CONFIG[s].label}
-              </button>
-            ))}
-          </div>
-
-          {/* Ticket price */}
-          <div className="flex gap-2">
-            <input type="number" step="0.01" value={ticketPrice} onChange={e => setTicketPrice(e.target.value)}
-              placeholder="票價" className="flex-1 border rounded-lg px-3 py-2 text-sm" />
-            <select value={ticketCurrency} onChange={e => setTicketCurrency(e.target.value as Currency)}
-              className="w-20 border rounded-lg px-2 py-2 text-sm bg-white">
-              {CURRENCIES.map(c => <option key={c}>{c}</option>)}
-            </select>
-          </div>
-          {ticketPrice && (
-            <p className="text-[10px] text-gray-400">
-              ≈ NT${convertToTWD(parseFloat(ticketPrice) || 0, ticketCurrency).toLocaleString()}
-            </p>
-          )}
-
-          {/* Resale (only when cancelled) */}
-          {status === 'cancelled' && (
-            <div className="border-t pt-2 mt-2">
-              <p className="text-xs text-gray-500 mb-1">轉售資訊</p>
-              <div className="flex gap-2">
-                <input type="number" step="0.01" value={resalePrice} onChange={e => setResalePrice(e.target.value)}
-                  placeholder="賣出價格" className="flex-1 border rounded-lg px-3 py-2 text-sm" />
-                <select value={resaleCurrency} onChange={e => setResaleCurrency(e.target.value as Currency)}
-                  className="w-20 border rounded-lg px-2 py-2 text-sm bg-white">
-                  {CURRENCIES.map(c => <option key={c}>{c}</option>)}
-                </select>
-              </div>
-              {resalePrice && (
-                <p className="text-[10px] text-gray-400 mt-1">
-                  ≈ NT${convertToTWD(parseFloat(resalePrice) || 0, resaleCurrency).toLocaleString()}
-                  {ticketPrice && ` (淨花費: NT$${(
-                    convertToTWD(parseFloat(ticketPrice) || 0, ticketCurrency) -
-                    convertToTWD(parseFloat(resalePrice) || 0, resaleCurrency)
-                  ).toLocaleString()})`}
-                </p>
+            <ArtistInput value={artists} artists={allArtists} onChange={setArtists} placeholder="演出者" />
+            <VenueInput value={venue} venues={allVenues} onChange={setVenue}
+              onSelect={v => setVenueUrl(v.url ?? '')} placeholder="地點" />
+            <div>
+              <input value={venueUrl} onChange={e => setVenueUrl(e.target.value)} placeholder="地點連結 (選填)"
+                className="w-full border rounded-lg px-3 py-2 text-sm" />
+              {venue.trim() && (
+                <p className="text-[10px] text-gray-400 mt-0.5">連結屬於場地，修改會影響所有同場地演出；留空不會清除既有連結</p>
               )}
             </div>
-          )}
+            <input value={seat} onChange={e => setSeat(e.target.value)} placeholder="座位 (選填)"
+              className="w-full border rounded-lg px-3 py-2 text-sm" />
+            <select value={category} onChange={e => setCategory(e.target.value as ShowCategory | '')}
+              className="w-full border rounded-lg px-3 py-2 text-sm bg-white">
+              <option value="">類別 (選填)</option>
+              {SHOW_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+            </select>
 
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500">評分</span>
-            <StarRating value={rating} onChange={setRating} size="md" />
-          </div>
-          <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="備註"
-            className="w-full border rounded-lg px-3 py-2 text-sm" rows={2} />
-          <button type="button" onClick={handleAddToCalendar} disabled={!title || !date}
-            className="w-full border border-purple-300 text-purple-500 rounded-full py-2.5 text-sm font-medium disabled:border-gray-200 disabled:text-gray-300">
-            加入 Apple 行事曆
-          </button>
-          <button type="submit" className="w-full bg-purple-500 text-white rounded-full py-2.5 text-sm font-medium">
-            {isEdit ? '儲存' : '新增'}
-          </button>
-        </form>
+            {/* Series */}
+            <div className="relative">
+              {selectedSeries ? (
+                <div className="flex items-center gap-2 border rounded-lg px-3 py-2 text-sm bg-gray-50">
+                  <span className="flex-1 text-gray-700 truncate">系列: {selectedSeries.title}</span>
+                  <button type="button" onClick={() => { setSeriesId(''); setSeriesSearch(''); }}
+                    className="text-gray-400 text-xs">✕</button>
+                </div>
+              ) : (
+                <input
+                  value={seriesSearch}
+                  onChange={e => { setSeriesSearch(e.target.value); setSeriesSearchOpen(true); }}
+                  onFocus={() => setSeriesSearchOpen(true)}
+                  placeholder="加入系列 (選填)"
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                />
+              )}
+              {seriesSearchOpen && filteredSeries.length > 0 && (
+                <ul className="absolute z-10 w-full bg-white border rounded-lg mt-1 shadow-lg max-h-40 overflow-y-auto">
+                  {filteredSeries.map(s => (
+                    <li key={s.id}
+                      onClick={() => { setSeriesId(s.id); setSeriesSearch(''); setSeriesSearchOpen(false); }}
+                      className="px-3 py-2 text-xs hover:bg-purple-50 cursor-pointer border-b border-gray-50 last:border-0 truncate">
+                      {s.title}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Links */}
+            <div>
+              <p className="text-xs text-gray-500 mb-1">相關連結</p>
+              {links.map((link, i) => (
+                <div key={i} className="flex items-center gap-1 mb-1">
+                  <span className="text-xs text-blue-500 flex-1 truncate">{link.label}: {link.url}</span>
+                  <button type="button" onClick={() => removeLink(i)} className="text-[10px] text-red-400">x</button>
+                </div>
+              ))}
+              <div className="flex gap-1">
+                <input value={newLinkLabel} onChange={e => setNewLinkLabel(e.target.value)} placeholder="名稱"
+                  className="w-20 border rounded-lg px-2 py-1.5 text-xs" />
+                <input value={newLinkUrl} onChange={e => setNewLinkUrl(e.target.value)} placeholder="URL"
+                  className="flex-1 border rounded-lg px-2 py-1.5 text-xs" />
+                <button type="button" onClick={addLink}
+                  className="text-xs bg-gray-100 text-gray-600 px-2 py-1.5 rounded-lg">+</button>
+              </div>
+            </div>
+
+            {/* Status */}
+            <div className="flex gap-1.5">
+              {(['interested', 'ticketed', 'cancelled'] as ShowStatus[]).map(s => (
+                <button key={s} type="button" onClick={() => setStatus(s)}
+                  className={`flex-1 text-xs py-1.5 rounded-full border transition-colors ${
+                    status === s ? STATUS_CONFIG[s].color + ' border-current' : 'border-gray-200 text-gray-400'
+                  }`}>
+                  {STATUS_CONFIG[s].label}
+                </button>
+              ))}
+            </div>
+
+            {/* Ticket price */}
+            <div className="flex gap-2">
+              <input type="number" step="0.01" value={ticketPrice} onChange={e => setTicketPrice(e.target.value)}
+                placeholder="票價" className="flex-1 border rounded-lg px-3 py-2 text-sm" />
+              <select value={ticketCurrency} onChange={e => setTicketCurrency(e.target.value as Currency)}
+                className="w-20 border rounded-lg px-2 py-2 text-sm bg-white">
+                {CURRENCIES.map(c => <option key={c}>{c}</option>)}
+              </select>
+            </div>
+            {ticketPrice && (
+              <p className="text-[10px] text-gray-400">
+                ≈ NT${convertToTWD(parseFloat(ticketPrice) || 0, ticketCurrency).toLocaleString()}
+              </p>
+            )}
+
+            {/* Resale (only when cancelled) */}
+            {status === 'cancelled' && (
+              <div className="border-t pt-2 mt-2">
+                <p className="text-xs text-gray-500 mb-1">轉售資訊</p>
+                <div className="flex gap-2">
+                  <input type="number" step="0.01" value={resalePrice} onChange={e => setResalePrice(e.target.value)}
+                    placeholder="賣出價格" className="flex-1 border rounded-lg px-3 py-2 text-sm" />
+                  <select value={resaleCurrency} onChange={e => setResaleCurrency(e.target.value as Currency)}
+                    className="w-20 border rounded-lg px-2 py-2 text-sm bg-white">
+                    {CURRENCIES.map(c => <option key={c}>{c}</option>)}
+                  </select>
+                </div>
+                {resalePrice && (
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    ≈ NT${convertToTWD(parseFloat(resalePrice) || 0, resaleCurrency).toLocaleString()}
+                    {ticketPrice && ` (淨花費: NT$${(
+                      convertToTWD(parseFloat(ticketPrice) || 0, ticketCurrency) -
+                      convertToTWD(parseFloat(resalePrice) || 0, resaleCurrency)
+                    ).toLocaleString()})`}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500">評分</span>
+              <StarRating value={rating} onChange={setRating} size="md" />
+            </div>
+            <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="備註"
+              className="w-full border rounded-lg px-3 py-2 text-sm" rows={2} />
+            <button type="button" onClick={handleAddToCalendar} disabled={!title || !date}
+              className="w-full border border-purple-300 text-purple-500 rounded-full py-2.5 text-sm font-medium disabled:border-gray-200 disabled:text-gray-300">
+              加入 Apple 行事曆
+            </button>
+            <button type="submit" className="w-full bg-purple-500 text-white rounded-full py-2.5 text-sm font-medium">
+              {isEdit ? '儲存' : '新增'}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

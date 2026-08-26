@@ -121,17 +121,13 @@ export default function DayDetail({ date, shows, schedules, allShows, allSeries,
             </div>
           )}
           {isAuthorized && (
-            <>
-              <div className="flex gap-2 mt-2">
-                <button onClick={() => onEditShow(s)} className="flex-1 text-xs text-purple-500 border border-purple-300 rounded-full py-1.5">編輯</button>
-                <button onClick={() => onDuplicateShow(s)} className="flex-1 text-xs text-blue-500 border border-blue-300 rounded-full py-1.5">複製</button>
-                <button onClick={() => onDeleteShow(s.id)} className="flex-1 text-xs text-red-400 border border-red-300 rounded-full py-1.5">刪除</button>
-              </div>
-              <button onClick={() => addToCalendar(s)}
-                className="w-full text-xs text-gray-500 border border-gray-200 rounded-full py-1.5 mt-1.5">
-                加入 Apple 行事曆
-              </button>
-            </>
+            <div className="flex gap-2 mt-2">
+              <button onClick={() => addToCalendar(s)} aria-label="加入 Apple 行事曆" title="加入 Apple 行事曆"
+                className="text-xs border border-gray-200 rounded-full py-1.5 px-3">📅</button>
+              <button onClick={() => onEditShow(s)} className="flex-1 text-xs text-purple-500 border border-purple-300 rounded-full py-1.5">編輯</button>
+              <button onClick={() => onDuplicateShow(s)} className="flex-1 text-xs text-blue-500 border border-blue-300 rounded-full py-1.5">複製</button>
+              <button onClick={() => onDeleteShow(s.id)} className="flex-1 text-xs text-red-400 border border-red-300 rounded-full py-1.5">刪除</button>
+            </div>
           )}
         </div>
       ))}
