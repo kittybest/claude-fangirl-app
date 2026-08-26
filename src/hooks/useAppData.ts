@@ -78,7 +78,7 @@ async function fetchRemote(): Promise<{ data: AppData; migrated: boolean }> {
       }
       return { data: empty, migrated: false };
     }
-  } catch {}
+  } catch { /* 遠端讀取失敗（離線或 API 掛掉）時降級讀 localStorage */ }
   return { data: getLocal(), migrated: false };
 }
 
@@ -91,7 +91,7 @@ async function saveRemote(data: AppData): Promise<void> {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-  } catch {}
+  } catch { /* 上面已先寫進 localStorage，遠端存檔失敗不影響本地資料 */ }
 }
 
 export function useAppData() {

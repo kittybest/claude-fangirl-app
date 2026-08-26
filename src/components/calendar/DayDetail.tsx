@@ -4,6 +4,7 @@ import { STATUS_CONFIG, SHOW_CATEGORIES, SCHEDULE_TYPES } from '../../utils/cons
 import { weekdayZh } from '../../utils/date';
 import { buildArtistIndex, displayNames } from '../../utils/artists';
 import { buildVenueIndex, displayVenue } from '../../utils/venues';
+import { downloadShowIcs } from '../../utils/calendar';
 import StarRating from '../ui/StarRating';
 
 interface Props {
@@ -41,6 +42,23 @@ export default function DayDetail({ date, shows, schedules, allShows, allSeries,
         hour: '2-digit', minute: '2-digit', hour12: false,
       });
     } catch { return ''; }
+  };
+
+  const addToCalendar = (s: Show) => {
+    const venue = displayVenue(venueIndex, s);
+    downloadShowIcs({
+      id: s.id,
+      title: s.title,
+      date: s.date,
+      time: s.time,
+      timezone: s.timezone,
+      artists: displayNames(artistIndex, s),
+      venue: venue?.name,
+      venueUrl: venue?.url,
+      seat: s.seat,
+      notes: s.notes,
+      links: s.links,
+    });
   };
 
   const getRelatedShow = (showId?: string) => {
@@ -103,11 +121,17 @@ export default function DayDetail({ date, shows, schedules, allShows, allSeries,
             </div>
           )}
           {isAuthorized && (
-            <div className="flex gap-2 mt-2">
-              <button onClick={() => onEditShow(s)} className="flex-1 text-xs text-purple-500 border border-purple-300 rounded-full py-1.5">編輯</button>
-              <button onClick={() => onDuplicateShow(s)} className="flex-1 text-xs text-blue-500 border border-blue-300 rounded-full py-1.5">複製</button>
-              <button onClick={() => onDeleteShow(s.id)} className="flex-1 text-xs text-red-400 border border-red-300 rounded-full py-1.5">刪除</button>
-            </div>
+            <>
+              <div className="flex gap-2 mt-2">
+                <button onClick={() => onEditShow(s)} className="flex-1 text-xs text-purple-500 border border-purple-300 rounded-full py-1.5">編輯</button>
+                <button onClick={() => onDuplicateShow(s)} className="flex-1 text-xs text-blue-500 border border-blue-300 rounded-full py-1.5">複製</button>
+                <button onClick={() => onDeleteShow(s.id)} className="flex-1 text-xs text-red-400 border border-red-300 rounded-full py-1.5">刪除</button>
+              </div>
+              <button onClick={() => addToCalendar(s)}
+                className="w-full text-xs text-gray-500 border border-gray-200 rounded-full py-1.5 mt-1.5">
+                加入 Apple 行事曆
+              </button>
+            </>
           )}
         </div>
       ))}

@@ -4,6 +4,7 @@ import { SHOW_CATEGORIES, STATUS_CONFIG, TIMEZONES } from '../../utils/constants
 import { CURRENCIES, convertToTWD } from '../../utils/currency';
 import { buildArtistIndex, displayNames } from '../../utils/artists';
 import { buildVenueIndex, displayVenue } from '../../utils/venues';
+import { downloadShowIcs } from '../../utils/calendar';
 import StarRating from '../ui/StarRating';
 import ArtistInput from '../ui/ArtistInput';
 import VenueInput from '../ui/VenueInput';
@@ -60,6 +61,21 @@ export default function ShowForm({ initial, isEdit, defaultDate, allSeries = [],
 
   const removeLink = (index: number) => {
     setLinks(links.filter((_, i) => i !== index));
+  };
+
+  const handleAddToCalendar = () => {
+    downloadShowIcs({
+      id: initial?.id,
+      title, date,
+      time: time || undefined,
+      timezone: time ? timezone : undefined,
+      artists,
+      venue: venue || undefined,
+      venueUrl: venueUrl || undefined,
+      seat: seat || undefined,
+      notes: notes || undefined,
+      links,
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -234,6 +250,10 @@ export default function ShowForm({ initial, isEdit, defaultDate, allSeries = [],
           </div>
           <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="備註"
             className="w-full border rounded-lg px-3 py-2 text-sm" rows={2} />
+          <button type="button" onClick={handleAddToCalendar} disabled={!title || !date}
+            className="w-full border border-purple-300 text-purple-500 rounded-full py-2.5 text-sm font-medium disabled:border-gray-200 disabled:text-gray-300">
+            加入 Apple 行事曆
+          </button>
           <button type="submit" className="w-full bg-purple-500 text-white rounded-full py-2.5 text-sm font-medium">
             {isEdit ? '儲存' : '新增'}
           </button>
