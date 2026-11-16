@@ -209,7 +209,15 @@ export function aggregateByArtist(
     totals.set(groupId, bucket);
   }
 
+  // Members only appear nested under their group, never again at the top level.
+  // A dangling groupId (group deleted) keeps the member at the top so it isn't lost.
+  const nested = new Set<string>();
+  for (const [groupId, memberIds] of membersByGroup) {
+    if (index.byId.has(groupId)) memberIds.forEach(id => nested.add(id));
+  }
+
   return [...totals]
+    .filter(([key]) => !nested.has(key))
     .filter(([, bucket]) => bucket.count > 0 || bucket.spent > 0)
     .map(([key, total]) => ({
       key,
