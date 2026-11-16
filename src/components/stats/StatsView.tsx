@@ -3,6 +3,7 @@ import { Show, Expense, Artist, Venue } from '../../types';
 import { SHOW_CATEGORIES, showCategoryToExpenseCategory } from '../../utils/constants';
 import { aggregateByArtist, ArtistBucket } from '../../utils/artists';
 import { aggregateByCity, aggregateByVenue } from '../../utils/venues';
+import ExportPanel from './ExportPanel';
 
 type BreakdownTab = 'artists' | 'venues' | 'cities';
 
@@ -18,6 +19,7 @@ export default function StatsView({ shows, expenses, artists, venues }: Props) {
   const [month, setMonth] = useState<number | null>(null); // null = full year
   const [expandedArtist, setExpandedArtist] = useState<string | null>(null);
   const [breakdown, setBreakdown] = useState<BreakdownTab>('artists');
+  const [exporting, setExporting] = useState(false);
 
   // Only count ticketed and cancelled for stats (not interested)
   const filteredShows = shows.filter(s => {
@@ -87,6 +89,10 @@ export default function StatsView({ shows, expenses, artists, venues }: Props) {
                 <option key={i + 1} value={i + 1}>{i + 1}月</option>
               ))}
             </select>
+            <button onClick={() => setExporting(true)} disabled={attendedShows.length === 0}
+              className="text-xs text-purple-600 border border-purple-300 rounded-lg px-2.5 py-1 disabled:opacity-40">
+              匯出
+            </button>
           </div>
         </div>
       </div>
@@ -230,6 +236,11 @@ export default function StatsView({ shows, expenses, artists, venues }: Props) {
           <p className="text-gray-400 text-sm text-center py-8">這段期間沒有資料</p>
         )}
       </div>
+
+      {exporting && (
+        <ExportPanel shows={attendedShows} venues={venues} year={year} month={month}
+          onClose={() => setExporting(false)} />
+      )}
     </div>
   );
 }

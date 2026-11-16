@@ -47,7 +47,7 @@ export default function ShowList({ shows, allArtists, allVenues }: Props) {
       if (artistId && !matchesArtist(allArtists, artistIndex, s, artistId)) return false;
       return true;
     });
-    const dir = time === 'past' ? -1 : 1;
+    const dir = time === 'future' ? 1 : -1;
     return list.sort((a, b) =>
       dir * (a.date.localeCompare(b.date) || (a.time || '').localeCompare(b.time || '')));
   }, [shows, time, today, year, month, statuses, categories, artistId, allArtists, artistIndex]);
