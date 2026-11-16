@@ -1,10 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Show, Series, Artist, Venue } from '../../types';
-import { STATUS_CONFIG } from '../../utils/constants';
-import { buildArtistIndex, displayNames } from '../../utils/artists';
-import { buildVenueIndex, displayVenue, VenueIndex } from '../../utils/venues';
+import { buildVenueIndex } from '../../utils/venues';
+import ShowList, { ShowRow } from './ShowList';
 
-type SubTab = 'series' | 'artists' | 'upcoming';
+type SubTab = 'series' | 'shows';
 
 interface Props {
   shows: Show[];
@@ -18,27 +17,11 @@ interface Props {
 }
 
 export default function ListView({ shows, series, allArtists, allVenues, isAuthorized, onEditSeries, onDeleteSeries, expandSeriesId }: Props) {
-  const artistIndex = useMemo(() => buildArtistIndex(allArtists), [allArtists]);
   const venueIndex = useMemo(() => buildVenueIndex(allVenues), [allVenues]);
   const [subTab, setSubTab] = useState<SubTab>('series');
   const [expandedId, setExpandedId] = useState<string | null>(expandSeriesId ?? null);
 
   const toggle = (id: string) => setExpandedId(expandedId === id ? null : id);
-
-  // Build artist -> shows map
-  const artistMap: Record<string, Show[]> = {};
-  for (const s of shows) {
-    for (const a of displayNames(artistIndex, s)) {
-      if (!artistMap[a]) artistMap[a] = [];
-      artistMap[a].push(s);
-    }
-  }
-  const sortedArtists = Object.entries(artistMap).sort((a, b) => b[1].length - a[1].length);
-
-  const today = new Date().toLocaleDateString('sv-SE'); // YYYY-MM-DD in local timezone
-  const upcomingShows = shows
-    .filter(s => s.status !== 'cancelled' && s.date >= today)
-    .sort((a, b) => a.date.localeCompare(b.date));
 
   return (
     <div className="flex flex-col h-full">
@@ -51,17 +34,11 @@ export default function ListView({ shows, series, allArtists, allVenues, isAutho
             }`}>
             依系列
           </button>
-          <button onClick={() => setSubTab('artists')}
+          <button onClick={() => setSubTab('shows')}
             className={`flex-1 text-xs py-1.5 rounded-full border transition-colors ${
-              subTab === 'artists' ? 'bg-purple-100 text-purple-700 border-purple-300' : 'border-gray-200 text-gray-400'
+              subTab === 'shows' ? 'bg-purple-100 text-purple-700 border-purple-300' : 'border-gray-200 text-gray-400'
             }`}>
-            依藝人
-          </button>
-          <button onClick={() => setSubTab('upcoming')}
-            className={`flex-1 text-xs py-1.5 rounded-full border transition-colors ${
-              subTab === 'upcoming' ? 'bg-purple-100 text-purple-700 border-purple-300' : 'border-gray-200 text-gray-400'
-            }`}>
-            即將到來
+            演出列表
           </button>
         </div>
       </div>
@@ -109,61 +86,11 @@ export default function ListView({ shows, series, allArtists, allVenues, isAutho
               })}
             </div>
           )
-        ) : subTab === 'artists' ? (
-          sortedArtists.length === 0 ? (
-            <p className="text-gray-400 text-xs text-center py-8">沒有藝人資料</p>
-          ) : (
-            <div className="divide-y">
-              {sortedArtists.map(([artist, artistShows]) => {
-                const isOpen = expandedId === `artist-${artist}`;
-                return (
-                  <div key={artist} className="bg-white">
-                    <button onClick={() => toggle(`artist-${artist}`)}
-                      className="w-full px-4 py-3 flex items-center gap-2 text-left">
-                      <span className="text-xs text-gray-400">{isOpen ? '▼' : '▶'}</span>
-                      <span className="text-sm font-medium text-gray-800 flex-1">{artist}</span>
-                      <span className="text-xs text-gray-400">{artistShows.length}場</span>
-                    </button>
-                    {isOpen && (
-                      <div className="px-4 pb-3">
-                        {artistShows.sort((a, b) => a.date.localeCompare(b.date)).map(s => (
-                          <ShowRow key={s.id} show={s} venueIndex={venueIndex} />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )
         ) : (
-          upcomingShows.length === 0 ? (
-            <p className="text-gray-400 text-xs text-center py-8">沒有即將到來的演出</p>
-          ) : (
-            <div className="bg-white px-4 py-2">
-              {upcomingShows.map(s => (
-                <ShowRow key={s.id} show={s} venueIndex={venueIndex} />
-              ))}
-            </div>
-          )
+          <ShowList shows={shows} allArtists={allArtists} allVenues={allVenues} />
         )}
       </div>
 
-    </div>
-  );
-}
-
-function ShowRow({ show, venueIndex }: { show: Show; venueIndex: VenueIndex }) {
-  const venue = displayVenue(venueIndex, show);
-  return (
-    <div className="flex items-center gap-2 py-1.5 border-b border-gray-50 last:border-0">
-      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${STATUS_CONFIG[show.status].dot}`} />
-      <span className="text-xs text-gray-600 w-20 flex-shrink-0">{show.date}</span>
-      <span className="text-xs text-gray-800 flex-1 truncate">{show.title}</span>
-      {venue && <span className="text-[10px] text-gray-400 flex-shrink-0">{venue.name}</span>}
-      <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${STATUS_CONFIG[show.status].color}`}>
-        {STATUS_CONFIG[show.status].label}
-      </span>
     </div>
   );
 }

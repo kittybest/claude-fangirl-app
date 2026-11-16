@@ -153,6 +153,28 @@ export interface ArtistStatRow {
 type StatShow = { artists: string[]; artistIds?: string[]; ticketPriceTWD?: number };
 type StatExpense = { artists: string[]; artistIds?: string[]; amountTWD: number };
 
+type ArtistTagged = { artists: string[]; artistIds?: string[] };
+
+/** Artist ids a record is tagged with; records that predate ids fall back to `raw:<name>`. */
+function artistKeysOf(index: ArtistIndex, record: ArtistTagged): Set<string> {
+  if (record.artistIds?.length) return new Set(record.artistIds);
+  return new Set(record.artists.map(name => findArtist(index, name)?.id ?? `raw:${name}`));
+}
+
+/**
+ * Whether a record is tagged with this artist. Picking a group also matches its
+ * members (one level only), the same scope the stats use for group totals.
+ */
+export function matchesArtist(
+  artists: Artist[],
+  index: ArtistIndex,
+  record: ArtistTagged,
+  artistId: string,
+): boolean {
+  const scope = new Set([artistId, ...membersOf(artists, artistId).map(a => a.id)]);
+  return [...artistKeysOf(index, record)].some(key => scope.has(key));
+}
+
 /**
  * Keyed by artist id so name variants can't split a person in two. Records that
  * predate ids fall back to their raw text rather than vanishing from the totals.
@@ -163,10 +185,7 @@ export function aggregateByArtist(
   expenses: StatExpense[],
 ): ArtistStatRow[] {
   const index = buildArtistIndex(artists);
-  const keysFor = (record: { artists: string[]; artistIds?: string[] }): Set<string> => {
-    if (record.artistIds?.length) return new Set(record.artistIds);
-    return new Set(record.artists.map(name => findArtist(index, name)?.id ?? `raw:${name}`));
-  };
+  const keysFor = (record: ArtistTagged) => artistKeysOf(index, record);
   const showKeys = shows.map(show => ({ show, keys: keysFor(show) }));
   const expenseKeys = expenses.map(expense => ({ expense, keys: keysFor(expense) }));
 
