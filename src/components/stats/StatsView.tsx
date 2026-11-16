@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Show, Expense, Artist, Venue } from '../../types';
+import { Show, Expense, Artist, Venue, ShowCategory } from '../../types';
 import { SHOW_CATEGORIES, showCategoryToExpenseCategory } from '../../utils/constants';
 import { aggregateByArtist, ArtistBucket } from '../../utils/artists';
 import { aggregateByCity, aggregateByVenue } from '../../utils/venues';
 import ExportPanel from './ExportPanel';
+import { ShowFilters } from '../series/ShowList';
 
 type BreakdownTab = 'artists' | 'venues' | 'cities';
 
@@ -12,9 +13,10 @@ interface Props {
   expenses: Expense[];
   artists: Artist[];
   venues: Venue[];
+  onOpenShowList: (filters: Partial<ShowFilters>) => void;
 }
 
-export default function StatsView({ shows, expenses, artists, venues }: Props) {
+export default function StatsView({ shows, expenses, artists, venues, onOpenShowList }: Props) {
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState<number | null>(null); // null = full year
   const [expandedArtist, setExpandedArtist] = useState<string | null>(null);
@@ -136,9 +138,13 @@ export default function StatsView({ shows, expenses, artists, venues }: Props) {
             <h3 className="text-sm font-bold text-gray-700 mb-2">演出類型</h3>
             <div className="flex flex-wrap gap-2">
               {Object.entries(byShowCategory).map(([cat, count]) => (
-                <span key={cat} className="text-xs bg-purple-50 text-purple-600 px-2.5 py-1 rounded-full">
-                  {SHOW_CATEGORIES.find(c => c.value === cat)?.label || cat} {count}場
-                </span>
+                <button key={cat}
+                  onClick={() => onOpenShowList({
+                    time: 'all', year, month, statuses: ['ticketed'], categories: [cat as ShowCategory], artistId: null,
+                  })}
+                  className="text-xs bg-purple-50 text-purple-600 px-2.5 py-1 rounded-full active:bg-purple-100">
+                  {SHOW_CATEGORIES.find(c => c.value === cat)?.label || cat} {count}場 ›
+                </button>
               ))}
             </div>
           </div>

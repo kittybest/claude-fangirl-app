@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Show, Series, Artist, Venue } from '../../types';
 import { buildVenueIndex } from '../../utils/venues';
-import ShowList, { ShowRow } from './ShowList';
+import ShowList, { ShowFilters, ShowRow } from './ShowList';
 
 type SubTab = 'series' | 'shows';
 
@@ -14,11 +14,13 @@ interface Props {
   onEditSeries: (series: Series) => void;
   onDeleteSeries: (id: string) => void;
   expandSeriesId?: string | null;
+  initialShowFilters?: Partial<ShowFilters> | null;
 }
 
-export default function ListView({ shows, series, allArtists, allVenues, isAuthorized, onEditSeries, onDeleteSeries, expandSeriesId }: Props) {
+export default function ListView({ shows, series, allArtists, allVenues, isAuthorized, onEditSeries, onDeleteSeries, expandSeriesId, initialShowFilters }: Props) {
   const venueIndex = useMemo(() => buildVenueIndex(allVenues), [allVenues]);
-  const [subTab, setSubTab] = useState<SubTab>('series');
+  // Coming from the calendar's series link opens 依系列; everything else lands on the show list.
+  const [subTab, setSubTab] = useState<SubTab>(expandSeriesId ? 'series' : 'shows');
   const [expandedId, setExpandedId] = useState<string | null>(expandSeriesId ?? null);
 
   const toggle = (id: string) => setExpandedId(expandedId === id ? null : id);
@@ -28,17 +30,17 @@ export default function ListView({ shows, series, allArtists, allVenues, isAutho
       <div className="bg-white border-b px-4 py-3">
         <h2 className="text-base font-bold mb-2">列表</h2>
         <div className="flex gap-1">
-          <button onClick={() => setSubTab('series')}
-            className={`flex-1 text-xs py-1.5 rounded-full border transition-colors ${
-              subTab === 'series' ? 'bg-purple-100 text-purple-700 border-purple-300' : 'border-gray-200 text-gray-400'
-            }`}>
-            依系列
-          </button>
           <button onClick={() => setSubTab('shows')}
             className={`flex-1 text-xs py-1.5 rounded-full border transition-colors ${
               subTab === 'shows' ? 'bg-purple-100 text-purple-700 border-purple-300' : 'border-gray-200 text-gray-400'
             }`}>
             演出列表
+          </button>
+          <button onClick={() => setSubTab('series')}
+            className={`flex-1 text-xs py-1.5 rounded-full border transition-colors ${
+              subTab === 'series' ? 'bg-purple-100 text-purple-700 border-purple-300' : 'border-gray-200 text-gray-400'
+            }`}>
+            依系列
           </button>
         </div>
       </div>
@@ -87,7 +89,8 @@ export default function ListView({ shows, series, allArtists, allVenues, isAutho
             </div>
           )
         ) : (
-          <ShowList shows={shows} allArtists={allArtists} allVenues={allVenues} />
+          <ShowList shows={shows} allArtists={allArtists} allVenues={allVenues}
+            initialFilters={initialShowFilters ?? undefined} />
         )}
       </div>
 

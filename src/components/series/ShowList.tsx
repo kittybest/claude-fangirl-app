@@ -8,6 +8,15 @@ import ArtistSelect from '../ui/ArtistSelect';
 
 type TimeScope = 'future' | 'past' | 'all';
 
+export interface ShowFilters {
+  time: TimeScope;
+  year: number | null;
+  month: number | null;
+  statuses: ShowStatus[];
+  categories: ShowCategory[];
+  artistId: string | null;
+}
+
 const DEFAULT_STATUSES: ShowStatus[] = ['ticketed', 'interested'];
 const STATUS_ORDER: ShowStatus[] = ['ticketed', 'interested', 'cancelled'];
 
@@ -15,18 +24,19 @@ interface Props {
   shows: Show[];
   allArtists: Artist[];
   allVenues: Venue[];
+  initialFilters?: Partial<ShowFilters>;
 }
 
-export default function ShowList({ shows, allArtists, allVenues }: Props) {
+export default function ShowList({ shows, allArtists, allVenues, initialFilters: init }: Props) {
   const artistIndex = useMemo(() => buildArtistIndex(allArtists), [allArtists]);
   const venueIndex = useMemo(() => buildVenueIndex(allVenues), [allVenues]);
 
-  const [time, setTime] = useState<TimeScope>('future');
-  const [year, setYear] = useState<number | null>(null);
-  const [month, setMonth] = useState<number | null>(null);
-  const [statuses, setStatuses] = useState<ShowStatus[]>(DEFAULT_STATUSES);
-  const [categories, setCategories] = useState<ShowCategory[]>([]);
-  const [artistId, setArtistId] = useState<string | null>(null);
+  const [time, setTime] = useState<TimeScope>(init?.time ?? 'future');
+  const [year, setYear] = useState<number | null>(init?.year ?? null);
+  const [month, setMonth] = useState<number | null>(init?.month ?? null);
+  const [statuses, setStatuses] = useState<ShowStatus[]>(init?.statuses ?? DEFAULT_STATUSES);
+  const [categories, setCategories] = useState<ShowCategory[]>(init?.categories ?? []);
+  const [artistId, setArtistId] = useState<string | null>(init?.artistId ?? null);
   const [panelOpen, setPanelOpen] = useState(false);
 
   const years = useMemo(() => {

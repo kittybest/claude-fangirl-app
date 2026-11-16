@@ -6,6 +6,7 @@ import BottomNav from './components/layout/BottomNav';
 import LoginModal from './components/layout/LoginModal';
 import CalendarView from './components/calendar/CalendarView';
 import ListView from './components/series/ListView';
+import { ShowFilters } from './components/series/ShowList';
 import ExpenseList from './components/expenses/ExpenseList';
 import StatsView from './components/stats/StatsView';
 import SettingsView from './components/settings/SettingsView';
@@ -39,10 +40,17 @@ export default function App() {
   const [seriesForm, setSeriesForm] = useState(false);
   const [editingSeries, setEditingSeries] = useState<Series | null>(null);
   const [expandSeriesId, setExpandSeriesId] = useState<string | null>(null);
+  const [listFilters, setListFilters] = useState<Partial<ShowFilters> | null>(null);
   const [loginModal, setLoginModal] = useState(false);
 
   const handleGoToSeries = (seriesId: string) => {
     setExpandSeriesId(seriesId);
+    setTab('lists');
+  };
+
+  const handleOpenShowList = (filters: Partial<ShowFilters>) => {
+    setExpandSeriesId(null);
+    setListFilters(filters);
     setTab('lists');
   };
 
@@ -78,6 +86,7 @@ export default function App() {
           onEditSeries={sr => setEditingSeries(sr)}
           onDeleteSeries={removeSeries}
           expandSeriesId={expandSeriesId}
+          initialShowFilters={listFilters}
         />
       )}
       {tab === 'expenses' && isAuthorized && (
@@ -97,6 +106,7 @@ export default function App() {
           expenses={data.expenses}
           artists={data.artists || []}
           venues={data.venues || []}
+          onOpenShowList={handleOpenShowList}
         />
       )}
       {tab === 'settings' && (
@@ -145,7 +155,7 @@ export default function App() {
 
       <BottomNav
         active={tab}
-        onChange={t => { setTab(t); if (t !== 'lists') setExpandSeriesId(null); }}
+        onChange={t => { setTab(t); setListFilters(null); if (t !== 'lists') setExpandSeriesId(null); }}
         isAuthorized={isAuthorized}
       />
 
