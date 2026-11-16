@@ -78,12 +78,10 @@ export function buildSummary(
       count: sorted.length,
       spentTWD: sorted.reduce((sum, s) => sum + (s.ticketPriceTWD || 0), 0),
       rows: sorted.map(s => {
-        const venue = displayVenue(venueIndex, s);
-        const city = venue && 'city' in venue ? venue.city : undefined;
         return {
           date: `${s.date.slice(5, 7)}/${s.date.slice(8, 10)}`,
           title: s.title,
-          place: venue ? (city ? `${venue.name}（${city}）` : venue.name) : '',
+          place: displayVenue(venueIndex, s)?.name ?? '',
           price: formatPrice(s),
         };
       }),
@@ -99,17 +97,23 @@ export function buildSummary(
   };
 }
 
-const headline = (summary: Summary) => `共 ${summary.count} 場 · 票價 ${ntd(summary.spentTWD)}`;
-const breakdown = (summary: Summary) => summary.groups.map(g => `${g.label} ${g.count}`).join(' · ');
-const groupHeading = (g: SummaryGroup) => `${g.count} 場 · ${ntd(g.spentTWD)}`;
+export interface RenderOptions {
+  showPrice: boolean;
+}
 
-export function summaryToText(summary: Summary): string {
-  const lines = [summary.title, headline(summary)];
+const headline = (summary: Summary, o: RenderOptions) =>
+  o.showPrice ? `共 ${summary.count} 場 · 票價 ${ntd(summary.spentTWD)}` : `共 ${summary.count} 場`;
+const breakdown = (summary: Summary) => summary.groups.map(g => `${g.label} ${g.count}`).join(' · ');
+const groupHeading = (g: SummaryGroup, o: RenderOptions) =>
+  o.showPrice ? `${g.count} 場 · ${ntd(g.spentTWD)}` : `${g.count} 場`;
+
+export function summaryToText(summary: Summary, o: RenderOptions): string {
+  const lines = [summary.title, headline(summary, o)];
   if (summary.groups.length > 1) lines.push(breakdown(summary));
   for (const g of summary.groups) {
-    lines.push('', `【${g.label}】${groupHeading(g)}`);
+    lines.push('', `【${g.label}】${groupHeading(g, o)}`);
     for (const r of g.rows) {
-      lines.push([`${r.date} ${r.title}`, r.place, r.price].filter(Boolean).join('｜'));
+      lines.push([`${r.date} ${r.title}`, r.place, o.showPrice ? r.price : ''].filter(Boolean).join('｜'));
     }
   }
   return lines.join('\n');
@@ -138,7 +142,7 @@ function fit(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): str
   return text.slice(0, lo) + '…';
 }
 
-export function summaryToImage(summary: Summary): Promise<Blob> {
+export function summaryToImage(summary: Summary, o: RenderOptions): Promise<Blob> {
   const W = 1080;
   const PAD = 72;
   const ROW_H = 104;
@@ -166,7 +170,7 @@ export function summaryToImage(summary: Summary): Promise<Blob> {
   y += 72;
   ctx.fillStyle = COLORS.text;
   ctx.font = `500 38px ${FONT}`;
-  ctx.fillText(headline(summary), PAD, y);
+  ctx.fillText(headline(summary, o), PAD, y);
   if (summary.groups.length > 1) {
     y += 56;
     ctx.fillStyle = COLORS.sub;
@@ -184,15 +188,18 @@ export function summaryToImage(summary: Summary): Promise<Blob> {
     ctx.fillText(g.label, PAD, y + 72);
     ctx.textAlign = 'right';
     ctx.font = `500 30px ${FONT}`;
-    ctx.fillText(groupHeading(g), W - PAD, y + 72);
+    ctx.fillText(groupHeading(g, o), W - PAD, y + 72);
     ctx.textAlign = 'left';
     y += GROUP_HEAD_H;
 
     for (const r of g.rows) {
-      ctx.font = `500 30px ${FONT}`;
-      const priceWidth = ctx.measureText(r.price).width;
-      ctx.fillStyle = COLORS.sub;
-      ctx.fillText(r.price, W - PAD - priceWidth, y + 40);
+      let priceWidth = 0;
+      if (o.showPrice) {
+        ctx.font = `500 30px ${FONT}`;
+        priceWidth = ctx.measureText(r.price).width + 32;
+        ctx.fillStyle = COLORS.sub;
+        ctx.fillText(r.price, W - PAD - priceWidth + 32, y + 40);
+      }
 
       ctx.fillStyle = COLORS.faint;
       ctx.font = `30px ${FONT}`;
@@ -200,7 +207,7 @@ export function summaryToImage(summary: Summary): Promise<Blob> {
       const titleX = PAD + 110;
       ctx.fillStyle = COLORS.text;
       ctx.font = `500 32px ${FONT}`;
-      ctx.fillText(fit(ctx, r.title, W - PAD - titleX - priceWidth - 32), titleX, y + 40);
+      ctx.fillText(fit(ctx, r.title, W - PAD - titleX - priceWidth), titleX, y + 40);
 
       if (r.place) {
         ctx.fillStyle = COLORS.faint;

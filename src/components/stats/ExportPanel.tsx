@@ -20,12 +20,13 @@ export default function ExportPanel({ shows, venues, year, month, onClose }: Pro
   const [categories, setCategories] = useState<ShowCategory[]>(() => available.map(c => c.value));
   const [message, setMessage] = useState('');
   const [image, setImage] = useState<Blob | null>(null);
+  const [showPrice, setShowPrice] = useState(true);
 
   const summary = useMemo(
     () => buildSummary(shows, venues, { year, month, categories }),
     [shows, venues, year, month, categories],
   );
-  const text = useMemo(() => summaryToText(summary), [summary]);
+  const text = useMemo(() => summaryToText(summary, { showPrice }), [summary, showPrice]);
   const fileBase = summaryFileBase(year, month);
 
   // Render the image ahead of the tap: iOS only opens the share sheet if it is
@@ -34,9 +35,9 @@ export default function ExportPanel({ shows, venues, year, month, onClose }: Pro
     let cancelled = false;
     setImage(null);
     if (summary.count === 0) return;
-    summaryToImage(summary).then(blob => { if (!cancelled) setImage(blob); }).catch(() => {});
+    summaryToImage(summary, { showPrice }).then(blob => { if (!cancelled) setImage(blob); }).catch(() => {});
     return () => { cancelled = true; };
-  }, [summary]);
+  }, [summary, showPrice]);
 
   const flash = (msg: string) => {
     setMessage(msg);
@@ -79,7 +80,15 @@ export default function ExportPanel({ shows, venues, year, month, onClose }: Pro
           ))}
         </div>
 
-        <p className="text-[10px] text-gray-400 mb-1 flex-shrink-0">預覽 · 金額只含票價，不含其他花費</p>
+        <label className="flex items-center gap-2 text-xs text-gray-600 mb-3 flex-shrink-0">
+          <input type="checkbox" checked={showPrice} onChange={e => setShowPrice(e.target.checked)}
+            className="accent-purple-600" />
+          顯示金額
+        </label>
+
+        <p className="text-[10px] text-gray-400 mb-1 flex-shrink-0">
+          預覽{showPrice && ' · 金額只含票價，不含其他花費'}
+        </p>
         <pre className="flex-1 overflow-y-auto bg-gray-50 rounded-lg p-3 text-[11px] leading-relaxed text-gray-700 whitespace-pre-wrap font-sans">
           {empty ? '沒有可匯出的演出' : text}
         </pre>
