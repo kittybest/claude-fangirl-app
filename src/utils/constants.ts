@@ -2,11 +2,14 @@ import { ShowCategory, ScheduleType, ExpenseCategory } from '../types';
 
 export const SHOW_CATEGORIES: { value: ShowCategory; label: string }[] = [
   { value: 'concert', label: '演唱會' },
+  { value: 'comeback', label: '回歸活動' },
+  { value: 'awards', label: '頒獎／歌謠祭' },
   { value: 'musical', label: '音樂劇' },
   { value: 'play', label: '戲劇' },
   { value: 'movie', label: '電影' },
   { value: 'online', label: '線上演出' },
   { value: 'festival', label: '音樂節' },
+  { value: 'sports', label: '運動賽事' },
   { value: 'fansign', label: '簽售' },
   { value: 'prerecording', label: '預錄' },
   { value: 'exhibition', label: '展覽' },

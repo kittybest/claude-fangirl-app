@@ -44,6 +44,9 @@ export default function ExportPanel({ shows, venues, year, month, onClose }: Pro
     setTimeout(() => setMessage(''), 2000);
   };
 
+  const allSelected = available.every(c => categories.includes(c.value));
+  const toggleAll = () => setCategories(allSelected ? [] : available.map(c => c.value));
+
   const toggle = (value: ShowCategory) =>
     setCategories(categories.includes(value) ? categories.filter(c => c !== value) : [...categories, value]);
 
@@ -69,15 +72,20 @@ export default function ExportPanel({ shows, venues, year, month, onClose }: Pro
           <button onClick={onClose} className="text-gray-400 text-xl">&times;</button>
         </div>
 
-        <div className="flex flex-wrap gap-1.5 mb-3 flex-shrink-0">
-          {available.map(c => (
-            <button key={c.value} onClick={() => toggle(c.value)}
-              className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                categories.includes(c.value) ? 'bg-purple-100 text-purple-700 border-purple-300' : 'border-gray-200 text-gray-400'
-              }`}>
-              {c.label}
-            </button>
-          ))}
+        <div className="flex items-start gap-2 mb-3 flex-shrink-0">
+          <div className="flex flex-wrap gap-1.5 flex-1">
+            {available.map(c => (
+              <button key={c.value} onClick={() => toggle(c.value)}
+                className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                  categories.includes(c.value) ? 'bg-purple-100 text-purple-700 border-purple-300' : 'border-gray-200 text-gray-400'
+                }`}>
+                {c.label}
+              </button>
+            ))}
+          </div>
+          <button onClick={toggleAll} className="text-xs text-gray-400 py-1 flex-shrink-0">
+            {allSelected ? '全不選' : '全選'}
+          </button>
         </div>
 
         <label className="flex items-center gap-2 text-xs text-gray-600 mb-3 flex-shrink-0">
