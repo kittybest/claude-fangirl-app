@@ -1,11 +1,12 @@
-import { useMemo } from 'react';
-import { Show, Schedule, Series, Artist, Venue } from '../../types';
+import { useMemo, useState } from 'react';
+import { Show, Schedule, Series, Artist, Venue, LineupSlot } from '../../types';
 import { STATUS_CONFIG, SHOW_CATEGORIES, SCHEDULE_TYPES } from '../../utils/constants';
 import { weekdayZh } from '../../utils/date';
 import { buildArtistIndex, displayNames } from '../../utils/artists';
 import { buildVenueIndex, displayVenue } from '../../utils/venues';
 import { downloadShowIcs } from '../../utils/calendar';
 import StarRating from '../ui/StarRating';
+import LineupModal from '../shows/LineupModal';
 
 interface Props {
   date: string;
@@ -26,9 +27,12 @@ interface Props {
   onDuplicateSchedule: (schedule: Schedule) => void;
   onDeleteShow: (id: string) => void;
   onDeleteSchedule: (id: string) => void;
+  onUpdateLineup: (showId: string, lineup: LineupSlot[]) => void;
 }
 
-export default function DayDetail({ date, shows, schedules, allShows, allSeries, allArtists, allVenues, isAuthorized, onGoToSeries, onNavigateToDate, onEditShow, onDuplicateShow, onEditSchedule, onDuplicateSchedule, onDeleteShow, onDeleteSchedule }: Props) {
+export default function DayDetail({ date, shows, schedules, allShows, allSeries, allArtists, allVenues, isAuthorized, onGoToSeries, onNavigateToDate, onEditShow, onDuplicateShow, onEditSchedule, onDuplicateSchedule, onDeleteShow, onDeleteSchedule, onUpdateLineup }: Props) {
+  const [lineupShowId, setLineupShowId] = useState<string | null>(null);
+  const lineupShow = lineupShowId ? shows.find(s => s.id === lineupShowId) : undefined;
   const artistIndex = useMemo(() => buildArtistIndex(allArtists), [allArtists]);
   const venueIndex = useMemo(() => buildVenueIndex(allVenues), [allVenues]);
   const d = new Date(date + 'T00:00:00');
@@ -110,6 +114,12 @@ export default function DayDetail({ date, shows, schedules, allShows, allSeries,
             {s.ticketPriceTWD != null && <span>NT${s.ticketPriceTWD.toLocaleString()}</span>}
           </div>
           {s.rating ? <div className="mt-1"><StarRating value={s.rating} size="sm" /></div> : null}
+          {s.category === 'festival' && (isAuthorized || (s.lineup?.length ?? 0) > 0) && (
+            <button onClick={() => setLineupShowId(s.id)}
+              className="mt-1.5 text-xs text-amber-600 border border-amber-300 rounded-full px-3 py-1">
+              節目表{s.lineup?.length ? `（已選 ${s.lineup.filter(l => l.starred).length} / 共 ${s.lineup.length}）` : ''}
+            </button>
+          )}
           {s.notes && <p className="text-[10px] text-gray-400 mt-1">{s.notes}</p>}
           {s.links.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-1">
@@ -169,6 +179,15 @@ export default function DayDetail({ date, shows, schedules, allShows, allSeries,
           </div>
         );
       })}
+
+      {lineupShow && (
+        <LineupModal
+          show={lineupShow}
+          isAuthorized={isAuthorized}
+          onChange={lineup => onUpdateLineup(lineupShow.id, lineup)}
+          onClose={() => setLineupShowId(null)}
+        />
+      )}
     </div>
   );
 }

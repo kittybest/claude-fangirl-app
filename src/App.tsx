@@ -100,6 +100,7 @@ export default function App() {
           onDeleteShow={id => { if (confirm('刪除此演出？')) removeShow(id); }}
           onDeleteSchedule={id => { if (confirm('刪除此時程？')) removeSchedule(id); }}
           onGoToSeries={handleGoToSeries}
+          onUpdateLineup={(id, lineup) => updateShow(id, { lineup })}
         />
       )}
       {tab === 'lists' && (

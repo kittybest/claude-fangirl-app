@@ -95,6 +95,8 @@ export default function ShowForm({ initial, isEdit, defaultDate, allSeries = [],
       links,
       seriesId: seriesId || undefined,
       runId: initial?.runId,
+      // A duplicate is usually another festival day with its own timetable
+      lineup: isEdit ? initial?.lineup : undefined,
       ticketPrice: price,
       ticketCurrency: price ? ticketCurrency : undefined,
       ticketPriceTWD: price ? convertToTWD(price, ticketCurrency) : undefined,

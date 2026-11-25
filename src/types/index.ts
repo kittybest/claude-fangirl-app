@@ -31,6 +31,17 @@ export interface Venue {
   reviewed?: boolean;
 }
 
+/** One act on a festival timetable. Times are local; past midnight is written
+ *  as 24:xx/25:xx so a day's slots sort correctly. */
+export interface LineupSlot {
+  id: string;
+  stage: string;
+  start: string; // HH:MM
+  end?: string;
+  artist: string;
+  starred?: boolean;
+}
+
 export interface Show {
   id: string;
   title: string;
@@ -59,6 +70,8 @@ export interface Show {
   resalePriceTWD?: number;
   rating?: number;
   notes?: string;
+  /** Festival timetable; starring an act does not touch `artists`. */
+  lineup?: LineupSlot[];
 }
 
 export interface Schedule {

@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Show, Schedule, Artist, Venue } from '../../types';
+import { Show, Schedule, Artist, Venue, LineupSlot } from '../../types';
 import { getDaysInMonth, getFirstDayOfWeek, formatDate, parseDate } from '../../utils/date';
 import { STATUS_CONFIG } from '../../utils/constants';
 import DayDetail from './DayDetail';
@@ -21,9 +21,10 @@ interface Props {
   allArtists: Artist[];
   allVenues: Venue[];
   onGoToSeries: (seriesId: string) => void;
+  onUpdateLineup: (showId: string, lineup: LineupSlot[]) => void;
 }
 
-export default function CalendarView({ shows, schedules, isAuthorized, onAddShow, onAddSchedule, onAddSeries, onEditShow, onDuplicateShow, onEditSchedule, onDuplicateSchedule, onDeleteShow, onDeleteSchedule, allSeries, allArtists, allVenues, onGoToSeries }: Props) {
+export default function CalendarView({ shows, schedules, isAuthorized, onAddShow, onAddSchedule, onAddSeries, onEditShow, onDuplicateShow, onEditSchedule, onDuplicateSchedule, onDeleteShow, onDeleteSchedule, allSeries, allArtists, allVenues, onGoToSeries, onUpdateLineup }: Props) {
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
@@ -166,6 +167,7 @@ export default function CalendarView({ shows, schedules, isAuthorized, onAddShow
             onDuplicateSchedule={onDuplicateSchedule}
             onDeleteShow={onDeleteShow}
             onDeleteSchedule={onDeleteSchedule}
+            onUpdateLineup={onUpdateLineup}
           />
         ) : (
           <div className="p-4 text-center text-gray-400 text-sm">
