@@ -65,7 +65,7 @@ export default function ShowForm({ initial, isEdit, defaultDate, allSeries = [],
 
   const handleAddToCalendar = () => {
     downloadShowIcs({
-      id: initial?.id,
+      id: initial?.id || undefined,
       title, date,
       time: time || undefined,
       timezone: time ? timezone : undefined,
@@ -94,6 +94,7 @@ export default function ShowForm({ initial, isEdit, defaultDate, allSeries = [],
       category: category || undefined,
       links,
       seriesId: seriesId || undefined,
+      runId: initial?.runId,
       ticketPrice: price,
       ticketCurrency: price ? ticketCurrency : undefined,
       ticketPriceTWD: price ? convertToTWD(price, ticketCurrency) : undefined,
@@ -110,7 +111,7 @@ export default function ShowForm({ initial, isEdit, defaultDate, allSeries = [],
     <div className="fixed inset-0 bg-black/40 z-50 flex items-end justify-center">
       <div className="bg-white rounded-t-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b">
-          <h2 className="text-base font-bold">{isEdit ? '編輯演出' : initial ? '複製演出' : '新增演出'}</h2>
+          <h2 className="text-base font-bold">{isEdit ? '編輯演出' : initial?.id ? '複製演出' : '新增演出'}</h2>
           <button onClick={onClose} className="text-gray-400 text-xl">&times;</button>
         </div>
         <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4 pt-3">

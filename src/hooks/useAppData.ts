@@ -1,12 +1,12 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { AppData, Show, Schedule, Expense, Series, Artist, Venue } from '../types';
+import { AppData, Show, Schedule, Expense, Series, Run, Artist, Venue } from '../types';
 import { generateId } from '../utils/id';
 import { migrateArtists, mergeArtistData, resolveArtistNames } from '../utils/artists';
 import { migrateVenues, mergeVenueData, resolveVenueName, resolveVenueNames } from '../utils/venues';
 
 const STORAGE_KEY = 'fangirl-app-data';
 
-const empty: AppData = { shows: [], schedules: [], expenses: [], series: [], artists: [], venues: [] };
+const empty: AppData = { shows: [], schedules: [], expenses: [], series: [], runs: [], artists: [], venues: [] };
 
 const backupPromises = new Map<string, Promise<boolean>>();
 /** Tags whose snapshot must exist before migrated data may be written back. */
@@ -46,6 +46,7 @@ function normalize(data: Record<string, unknown>): { data: AppData; migrated: bo
     schedules: Array.isArray(data.schedules) ? data.schedules : [],
     expenses: Array.isArray(data.expenses) ? data.expenses : [],
     series: Array.isArray(data.series) ? data.series : [],
+    runs: Array.isArray(data.runs) ? data.runs : [],
     artists: Array.isArray(data.artists) ? data.artists : [],
     venues: Array.isArray(data.venues) ? data.venues : [],
   } as AppData;
@@ -67,7 +68,7 @@ async function fetchRemote(): Promise<{ data: AppData; migrated: boolean }> {
     if (res.ok) {
       const raw = await res.json();
       const { data, migrated } = normalize(raw);
-      if (data.shows.length > 0 || data.schedules.length > 0 || data.expenses.length > 0 || data.series.length > 0) {
+      if (data.shows.length > 0 || data.schedules.length > 0 || data.expenses.length > 0 || data.series.length > 0 || data.runs.length > 0) {
         return { data, migrated };
       }
       // Remote empty — check local for migration
@@ -357,6 +358,34 @@ export function useAppData() {
     });
   }, [setData]);
 
+  // Runs — a date range only; shows are added from it one at a time
+  const addRun = useCallback((run: Omit<Run, 'id' | 'venueId'>) => {
+    setData(d => {
+      const { venueId, venues } = resolveVenueName(d.venues, run.venue);
+      return { ...d, venues, runs: [...d.runs, { ...run, id: generateId(), venueId }] };
+    });
+  }, [setData]);
+
+  const updateRun = useCallback((id: string, updates: Omit<Run, 'id' | 'venueId'>) => {
+    setData(d => {
+      const { venueId, venues } = resolveVenueName(d.venues, updates.venue);
+      return {
+        ...d,
+        venues,
+        runs: d.runs.map(r => (r.id === id ? { ...updates, id, venueId } : r)),
+      };
+    });
+  }, [setData]);
+
+  // Shows picked from the run are real records, so they stay; only the link goes.
+  const removeRun = useCallback((id: string) => {
+    setData(d => ({
+      ...d,
+      runs: d.runs.filter(r => r.id !== id),
+      shows: d.shows.map(s => (s.runId === id ? { ...s, runId: undefined } : s)),
+    }));
+  }, [setData]);
+
   // Artists
   const addArtist = useCallback((artist: Artist) => {
     setData(d => d.artists.some(a => a.id === artist.id) ? d : { ...d, artists: [...d.artists, artist] });
@@ -404,6 +433,7 @@ export function useAppData() {
     addSchedule, updateSchedule, removeSchedule,
     addExpense, updateExpense, removeExpense,
     addSeries, updateSeries, removeSeries,
+    addRun, updateRun, removeRun,
     addArtist, updateArtist, mergeArtists, removeArtist,
     updateVenue, mergeVenues, removeVenue,
   };

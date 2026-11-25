@@ -48,6 +48,8 @@ export interface Show {
   category?: ShowCategory;
   links: ShowLink[];
   seriesId?: string;
+  /** The production run this show was picked from, if any. */
+  runId?: string;
   ticketPrice?: number;
   ticketCurrency?: Currency;
   ticketPriceTWD?: number;
@@ -89,11 +91,28 @@ export interface Series {
   showIds: string[];
 }
 
+/** A production running over a date range (e.g. a musical), before any
+ *  specific performance is chosen. Never counted in stats. */
+export interface Run {
+  id: string;
+  title: string;
+  venue?: string;
+  venueId?: string;
+  timezone?: string;
+  startDate?: string; // YYYY-MM-DD
+  endDate?: string;   // YYYY-MM-DD
+  /** Free text when exact dates are unknown, e.g. "2月，日期未公布". */
+  dateNote?: string;
+  infoUrl?: string;
+  notes?: string;
+}
+
 export interface AppData {
   shows: Show[];
   schedules: Schedule[];
   expenses: Expense[];
   series: Series[];
+  runs: Run[];
   artists: Artist[];
   venues: Venue[];
 }

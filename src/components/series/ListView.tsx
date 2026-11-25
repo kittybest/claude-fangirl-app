@@ -1,23 +1,29 @@
 import { useMemo, useState } from 'react';
-import { Show, Series, Artist, Venue } from '../../types';
+import { Show, Series, Run, Artist, Venue } from '../../types';
 import { buildVenueIndex } from '../../utils/venues';
 import ShowList, { ShowFilters, ShowRow } from './ShowList';
+import RunList from './RunList';
 
-type SubTab = 'series' | 'shows';
+type SubTab = 'series' | 'shows' | 'runs';
 
 interface Props {
   shows: Show[];
   series: Series[];
+  runs: Run[];
   allArtists: Artist[];
   allVenues: Venue[];
   isAuthorized: boolean;
   onEditSeries: (series: Series) => void;
   onDeleteSeries: (id: string) => void;
+  onAddRun: () => void;
+  onEditRun: (run: Run) => void;
+  onDeleteRun: (id: string) => void;
+  onAddShowFromRun: (run: Run) => void;
   expandSeriesId?: string | null;
   initialShowFilters?: Partial<ShowFilters> | null;
 }
 
-export default function ListView({ shows, series, allArtists, allVenues, isAuthorized, onEditSeries, onDeleteSeries, expandSeriesId, initialShowFilters }: Props) {
+export default function ListView({ shows, series, runs, allArtists, allVenues, isAuthorized, onEditSeries, onDeleteSeries, onAddRun, onEditRun, onDeleteRun, onAddShowFromRun, expandSeriesId, initialShowFilters }: Props) {
   const venueIndex = useMemo(() => buildVenueIndex(allVenues), [allVenues]);
   // Coming from the calendar's series link opens 依系列; everything else lands on the show list.
   const [subTab, setSubTab] = useState<SubTab>(expandSeriesId ? 'series' : 'shows');
@@ -42,11 +48,20 @@ export default function ListView({ shows, series, allArtists, allVenues, isAutho
             }`}>
             依系列
           </button>
+          <button onClick={() => setSubTab('runs')}
+            className={`flex-1 text-xs py-1.5 rounded-full border transition-colors ${
+              subTab === 'runs' ? 'bg-purple-100 text-purple-700 border-purple-300' : 'border-gray-200 text-gray-400'
+            }`}>
+            檔期
+          </button>
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {subTab === 'series' ? (
+        {subTab === 'runs' ? (
+          <RunList runs={runs} shows={shows} allVenues={allVenues} isAuthorized={isAuthorized}
+            onAddRun={onAddRun} onEditRun={onEditRun} onDeleteRun={onDeleteRun} onAddShow={onAddShowFromRun} />
+        ) : subTab === 'series' ? (
           (series || []).length === 0 ? (
             <p className="text-gray-400 text-xs text-center py-8">沒有系列</p>
           ) : (

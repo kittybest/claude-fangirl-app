@@ -171,6 +171,7 @@ export function mergeVenueData(data: AppData, fromId: string, intoId: string): A
     ...data,
     venues: data.venues.filter(v => v.id !== fromId).map(v => (v.id === intoId ? merged : v)),
     shows: data.shows.map(s => (s.venueId === fromId ? { ...s, venueId: intoId } : s)),
+    runs: (data.runs || []).map(r => (r.venueId === fromId ? { ...r, venueId: intoId } : r)),
   };
 }
 
