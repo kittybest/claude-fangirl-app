@@ -4,6 +4,7 @@ import { buildArtistIndex, displayNames } from '../../utils/artists';
 import { buildVenueIndex, displayVenue } from '../../utils/venues';
 import ArtistInput from '../ui/ArtistInput';
 import VenueInput from '../ui/VenueInput';
+import { parseSeriesImport, SERIES_IMPORT_PROMPT } from '../../utils/seriesImport';
 
 interface SeriesItem {
   id?: string; // existing show id, undefined for new
@@ -40,6 +41,33 @@ export default function SeriesForm({ initial, allArtists = [], allVenues = [], o
 
   const isEdit = !!initial;
 
+  const [importOpen, setImportOpen] = useState(false);
+  const [importText, setImportText] = useState('');
+  const [importErrors, setImportErrors] = useState<{ line: number; text: string }[]>([]);
+  const [promptCopied, setPromptCopied] = useState(false);
+
+  const copyPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(SERIES_IMPORT_PROMPT);
+      setPromptCopied(true);
+      setTimeout(() => setPromptCopied(false), 1500);
+    } catch {
+      alert('無法複製，請手動複製：\n\n' + SERIES_IMPORT_PROMPT);
+    }
+  };
+
+  // Appends parsed rows; blank rows already in the list are dropped first
+  const runImport = () => {
+    const { items: parsed, errors } = parseSeriesImport(importText);
+    setImportErrors(errors);
+    if (parsed.length > 0) {
+      setItems(prev => [...prev.filter(item => item.date || item.venue.trim()), ...parsed]);
+    }
+    // Keep only the failed lines, so fixing them and parsing again won't duplicate the rest
+    setImportText(errors.map(err => err.text).join('\n'));
+    if (errors.length === 0) setImportOpen(false);
+  };
+
   const addItem = () => setItems([...items, { date: '', venue: '' }]);
 
   const updateItem = (index: number, field: 'date' | 'venue', value: string) => {
@@ -69,6 +97,35 @@ export default function SeriesForm({ initial, allArtists = [], allVenues = [], o
           <input value={title} onChange={e => setTitle(e.target.value)} placeholder="系列名稱 * (e.g. ATEEZ World Tour)"
             required className="w-full border rounded-lg px-3 py-2 text-sm" />
           <ArtistInput value={artists} artists={allArtists} onChange={setArtists} placeholder="演出者 (選填)" />
+
+          {!isEdit && (
+            <div className="border-t pt-2">
+              <button type="button" onClick={() => setImportOpen(!importOpen)}
+                className="text-xs text-purple-500 border border-purple-300 rounded-full px-2.5 py-1">
+                {importOpen ? '收起匯入' : '貼上匯入'}
+              </button>
+              {importOpen && (
+                <div className="mt-2 space-y-1.5">
+                  <textarea value={importText} onChange={e => setImportText(e.target.value)} rows={5}
+                    placeholder={'一行一場，例如：\n2027-01-16~01-17 曼谷\n2027-02-27 雪梨'}
+                    className="w-full border rounded-lg px-3 py-2 text-xs font-mono" />
+                  <div className="flex gap-2">
+                    <button type="button" onClick={copyPrompt}
+                      className="text-xs text-gray-600 border border-gray-300 rounded-full px-2.5 py-1">
+                      {promptCopied ? '已複製' : '複製提示詞'}
+                    </button>
+                    <button type="button" onClick={runImport} disabled={!importText.trim()}
+                      className="text-xs text-white bg-purple-500 rounded-full px-3 py-1 disabled:bg-gray-300">解析</button>
+                  </div>
+                  {importErrors.length > 0 && (
+                    <div className="text-[10px] text-red-500 space-y-0.5">
+                      <p>{importErrors.length} 行無法解析，已留在框內，修正後可再按解析；其餘已加入列表</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="border-t pt-2">
             <div className="flex items-center justify-between mb-2">
